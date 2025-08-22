@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -171,14 +172,22 @@ public class AuthService {
     }
 
     private RefreshToken createRefreshToken(User user) {
-        // Delete existing refresh token for user
-        refreshTokenRepository.findByUser(user)
-                .ifPresent(refreshTokenRepository::delete);
-
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setUser(user);
-        refreshToken.setToken(UUID.randomUUID().toString());
-        refreshToken.setExpiryDate(LocalDateTime.now().plusDays(7)); // 7 days expiry
+        // Find existing refresh token for user
+        Optional<RefreshToken> existingTokenOpt = refreshTokenRepository.findByUser(user);
+        
+        RefreshToken refreshToken;
+        if (existingTokenOpt.isPresent()) {
+            // Update existing token
+            refreshToken = existingTokenOpt.get();
+            refreshToken.setToken(UUID.randomUUID().toString());
+            refreshToken.setExpiryDate(LocalDateTime.now().plusDays(7)); // 7 days expiry
+        } else {
+            // Create new token
+            refreshToken = new RefreshToken();
+            refreshToken.setUser(user);
+            refreshToken.setToken(UUID.randomUUID().toString());
+            refreshToken.setExpiryDate(LocalDateTime.now().plusDays(7)); // 7 days expiry
+        }
         
         return refreshTokenRepository.save(refreshToken);
     }
