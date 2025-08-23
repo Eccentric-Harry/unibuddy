@@ -1,0 +1,48 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Application properties with sensitive data
+backend/src/main/resources/application.properties
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application-dev.properties
+backend/src/main/resources/application-prod.properties
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backend build files
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/.mvn/wrapper/maven-wrapper.properties
+
+# Frontend build files
+frontend/dist/
+frontend/node_modules/
+frontend/.vite/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Database files
+*.db
+*.sqlite
+
+# Keys and certificates
+*.key
+*.pem
+*.p12
+*.jks
