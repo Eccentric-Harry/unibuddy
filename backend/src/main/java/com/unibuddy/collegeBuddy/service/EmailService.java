@@ -20,31 +20,33 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    public void sendVerificationEmail(String toEmail, String userName, String verificationToken) {
+
+
+    public void sendVerificationEmailWithTOTP(String toEmail, String userName, String totpCode) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(toEmail);
             message.setFrom(fromEmail);
-            message.setSubject("College Buddy - Verify Your Email");
+            message.setSubject("College Buddy - Email Verification Code");
             
-            String verificationUrl = frontendUrl + "/verify-email?token=" + verificationToken;
             String text = String.format(
                 "Hi %s,\n\n" +
-                "Welcome to College Buddy! Please verify your email address by clicking the link below:\n\n" +
-                "%s\n\n" +
-                "This link will expire in 24 hours.\n\n" +
+                "Welcome to College Buddy! Please verify your email address using the code below:\n\n" +
+                "Verification Code: %s\n\n" +
+                "This code will expire in 5 minutes for security reasons.\n\n" +
+                "Enter this code on the verification page to complete your registration.\n\n" +
                 "If you didn't create an account with College Buddy, please ignore this email.\n\n" +
                 "Best regards,\n" +
                 "College Buddy Team",
-                userName, verificationUrl
+                userName, totpCode
             );
             
             message.setText(text);
             mailSender.send(message);
             
-            log.info("Verification email sent to: {}", toEmail);
+            log.info("TOTP verification email sent to: {}", toEmail);
         } catch (Exception e) {
-            log.error("Failed to send verification email to: {}", toEmail, e);
+            log.error("Failed to send TOTP verification email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send verification email");
         }
     }

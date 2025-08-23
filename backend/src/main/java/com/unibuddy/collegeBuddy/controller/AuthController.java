@@ -38,10 +38,10 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/verify-email")
-    public ResponseEntity<Map<String, String>> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
-        authService.verifyEmail(request);
-        return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
+    @PostMapping("/verify-totp")
+    public ResponseEntity<Map<String, String>> verifyTOTP(@Valid @RequestBody VerifyTOTPRequest request) {
+        authService.verifyEmailWithTOTP(request);
+        return ResponseEntity.ok(Map.of("message", "Email verified successfully with TOTP"));
     }
 
     @PostMapping("/resend-verification")

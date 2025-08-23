@@ -58,12 +58,49 @@ export function validateCollegeEmail(email: string, allowedDomains?: string[]): 
   if (!validateEmail(email)) return false;
   
   if (allowedDomains && allowedDomains.length > 0) {
-    const domain = email.split('@')[1];
+    const domain = email.split('@')[1]?.toLowerCase();
     return allowedDomains.includes(domain);
   }
   
-  // Basic check for .edu domains
-  return email.endsWith('.edu');
+  // Extract domain from email
+  const domain = email.split('@')[1]?.toLowerCase();
+  if (!domain) return false;
+  
+  // Common educational domain patterns
+  const educationalPatterns = [
+    /\.edu$/,           // US educational institutions
+    /\.ac\.in$/,        // Indian academic institutions
+    /\.edu\.in$/,       // Indian educational institutions
+    /\.ac\.uk$/,        // UK academic institutions
+    /\.edu\.au$/,       // Australian educational institutions
+    /\.edu\.sg$/,       // Singapore educational institutions
+  ];
+  
+  // Check if domain matches any educational pattern
+  if (educationalPatterns.some(pattern => pattern.test(domain))) {
+    return true;
+  }
+  
+  // Specific known educational domains that might not follow standard patterns
+  const knownEducationalDomains = [
+    'iisc.ac.in',
+    'nitt.edu',
+    'manipal.edu',
+    'vitapstudent.ac.in',
+    'vitastudent.ac.in',
+    'srmist.edu.in',
+    'amrita.edu',
+    'bits-pilani.ac.in',
+    'thapar.edu',
+    'lpu.co.in',
+    'karunya.edu',
+    'jgu.edu.in',
+    'bennett.edu.in',
+    'ashoka.edu.in',
+    'snu.edu.in'
+  ];
+  
+  return knownEducationalDomains.includes(domain);
 }
 
 export function truncateText(text: string, maxLength: number): string {

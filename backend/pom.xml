@@ -87,6 +87,17 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- TOTP Library for generating time-based one-time passwords -->
+		<dependency>
+			<groupId>de.taimos</groupId>
+			<artifactId>totp</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<!-- Apache Commons Codec for Base32 encoding -->
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>

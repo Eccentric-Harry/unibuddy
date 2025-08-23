@@ -39,6 +39,7 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final TOTPService totpService;
 
     public AuthResponse register(RegisterRequest request) {
         // Check if user already exists
@@ -64,15 +65,15 @@ public class AuthService {
         user.setYear(request.getYear());
         user.setRole(User.Role.STUDENT);
         
-        // Generate verification token
-        String verificationToken = UUID.randomUUID().toString();
-        user.setVerificationToken(verificationToken);
-        user.setVerificationTokenExpiry(LocalDateTime.now().plusDays(1)); // 24 hours expiry
+        // Generate verification code for email verification
+        String verificationCode = totpService.generateVerificationCode();
+        user.setVerificationCode(verificationCode);
+        user.setVerificationCodeCreatedAt(LocalDateTime.now());
         
         user = userRepository.save(user);
 
-        // Send verification email
-        emailService.sendVerificationEmail(user.getEmail(), user.getName(), verificationToken);
+        // Send verification email with the code
+        emailService.sendVerificationEmailWithTOTP(user.getEmail(), user.getName(), verificationCode);
 
         // Generate tokens
         String accessToken = jwtUtils.generateToken(user);
@@ -132,17 +133,32 @@ public class AuthService {
         return createAuthResponse(user, newAccessToken, newRefreshToken.getToken());
     }
 
-    public void verifyEmail(VerifyEmailRequest request) {
-        User user = userRepository.findByVerificationToken(request.getToken())
-                .orElseThrow(() -> new NotFoundException("Invalid verification token"));
+    public void verifyEmailWithTOTP(VerifyTOTPRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + request.getEmail()));
 
-        if (user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Verification token has expired");
+        if (user.getEmailVerified()) {
+            throw new BadRequestException("Email is already verified");
         }
 
+        if (user.getVerificationCode() == null || user.getVerificationCodeCreatedAt() == null) {
+            throw new BadRequestException("No verification in progress. Please request a new verification email.");
+        }
+
+        // Validate verification code (includes expiry check)
+        if (!totpService.validateVerificationCode(user.getVerificationCode(), request.getTotpCode(), user.getVerificationCodeCreatedAt())) {
+            // Check if it's an expiry issue for better error message
+            if (totpService.isCodeExpired(user.getVerificationCodeCreatedAt())) {
+                throw new BadRequestException("Verification code has expired. Please request a new verification email.");
+            } else {
+                throw new BadRequestException("Invalid verification code");
+            }
+        }
+
+        // Mark email as verified and clear verification data
         user.setEmailVerified(true);
-        user.setVerificationToken(null);
-        user.setVerificationTokenExpiry(null);
+        user.setVerificationCode(null);
+        user.setVerificationCodeCreatedAt(null);
         
         userRepository.save(user);
     }
@@ -155,15 +171,15 @@ public class AuthService {
             throw new BadRequestException("Email is already verified");
         }
 
-        // Generate new verification token
-        String verificationToken = UUID.randomUUID().toString();
-        user.setVerificationToken(verificationToken);
-        user.setVerificationTokenExpiry(LocalDateTime.now().plusDays(1));
+        // Generate new verification code
+        String verificationCode = totpService.generateVerificationCode();
+        user.setVerificationCode(verificationCode);
+        user.setVerificationCodeCreatedAt(LocalDateTime.now());
         
         userRepository.save(user);
 
-        // Send verification email
-        emailService.sendVerificationEmail(user.getEmail(), user.getName(), verificationToken);
+        // Send verification email with the new code
+        emailService.sendVerificationEmailWithTOTP(user.getEmail(), user.getName(), verificationCode);
     }
 
     public void logout(String refreshToken) {

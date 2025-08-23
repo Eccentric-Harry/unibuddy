@@ -54,11 +54,12 @@ public class User implements UserDetails {
     @Column(name = "email_verified", nullable = false)
     private Boolean emailVerified = false;
 
-    @Column(name = "verification_token")
-    private String verificationToken;
+    // Email verification fields
+    @Column(name = "verification_code")
+    private String verificationCode;
 
-    @Column(name = "verification_token_expiry")
-    private LocalDateTime verificationTokenExpiry;
+    @Column(name = "verification_code_created_at")
+    private LocalDateTime verificationCodeCreatedAt;
 
     @Column(name = "reset_password_token")
     private String resetPasswordToken;
@@ -103,9 +104,8 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        // Temporarily return true to test password verification
-        // TODO: Change back to return emailVerified; once testing is complete
-        return true;
+        // Account is enabled only after email verification
+        return emailVerified != null && emailVerified;
     }
 
     public enum Role {

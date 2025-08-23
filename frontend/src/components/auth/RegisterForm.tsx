@@ -16,7 +16,7 @@ const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address')
     .refine((email) => validateCollegeEmail(email), {
-      message: 'Please use your college email address (.edu domain)',
+      message: 'Please use your official college or university email address',
     }),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
@@ -33,6 +33,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
   const { register: registerUser, isLoading, error, clearError } = useAuthStore();
@@ -50,11 +51,12 @@ export function RegisterForm() {
       clearError();
       const { confirmPassword, ...registerData } = data;
       await registerUser(registerData as RegisterRequest);
+      setRegisteredEmail(data.email);
       setIsSuccess(true);
       
-      // Redirect to login after 2 seconds
+      // Redirect to TOTP verification after 2 seconds with email parameter
       setTimeout(() => {
-        navigate('/login');
+        navigate(`/verify-totp?email=${encodeURIComponent(data.email)}`);
       }, 2000);
     } catch (error) {
       // Error is handled by the store
@@ -73,7 +75,7 @@ export function RegisterForm() {
             </div>
             <CardTitle className="text-2xl text-center text-green-600">Registration Successful!</CardTitle>
             <CardDescription className="text-center">
-              Please check your email for verification instructions. You'll be redirected to login shortly.
+              A 6-digit verification code has been sent to <strong>{registeredEmail}</strong>. You'll be redirected to the verification page shortly.
             </CardDescription>
           </CardHeader>
         </Card>

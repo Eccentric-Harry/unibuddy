@@ -33,9 +33,11 @@ class EmailValidationServiceTest {
 
     @Test
     void shouldValidateCustomDomains() {
-        // Test that any .ac.in domain works (no need for custom config)
-        assertTrue(emailValidationService.isCollegeEmail("student@anycollege.ac.in"));
-        assertTrue(emailValidationService.isCollegeEmail("user@randomuni.ac.in"));
+        // Test that domains in the database work (these should be in the college database)
+        // Note: The system validates against actual college domains in the database,
+        // not just any .ac.in domain pattern
+        assertTrue(emailValidationService.isCollegeEmail("student@iitd.ac.in"));
+        assertTrue(emailValidationService.isCollegeEmail("user@du.ac.in"));
     }
 
     @Test

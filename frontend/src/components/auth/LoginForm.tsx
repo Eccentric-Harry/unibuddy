@@ -60,6 +60,16 @@ export function LoginForm() {
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                 {error}
+                {error.includes('verify your email') && (
+                  <div className="mt-2">
+                    <Link 
+                      to="/resend-verification" 
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      Resend verification email
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
             

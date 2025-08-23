@@ -5,6 +5,8 @@ import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Dashboard } from './pages/Dashboard';
+import { ResendVerificationPage } from './pages/ResendVerificationPage';
+import { TOTPVerificationPage } from './pages/TOTPVerificationPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -25,6 +27,14 @@ function App() {
             <Route 
               path="/register" 
               element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterForm />} 
+            />
+            <Route 
+              path="/resend-verification" 
+              element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ResendVerificationPage />} 
+            />
+            <Route 
+              path="/verify-totp" 
+              element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <TOTPVerificationPage />} 
             />
             
             {/* Protected routes */}
