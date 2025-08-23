@@ -39,46 +39,44 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final TOTPService totpService;
+    private final PendingUserService pendingUserService;
 
-    public AuthResponse register(RegisterRequest request) {
+    public RegistrationResponse register(RegisterRequest request) {
         // Check if user already exists
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BadRequestException("Email is already registered");
         }
 
-        // Extract college domain from email
+        // Extract college domain from email and validate it exists
         String emailDomain = extractDomainFromEmail(request.getEmail());
         
-        // Find existing college - don't create new ones
-        College college = collegeRepository.findByDomain(emailDomain)
+        // Validate that the domain is from a recognized educational institution
+        collegeRepository.findByDomain(emailDomain)
                 .orElseThrow(() -> new BadRequestException(
                     "Email domain '" + emailDomain + "' is not from a recognized educational institution. " +
                     "Please use your official college/university email address."));
 
-        // Create new user
-        User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setCollege(college);
-        user.setYear(request.getYear());
-        user.setRole(User.Role.STUDENT);
+        // Generate OTP
+        String otp = totpService.generateVerificationCode();
+        LocalDateTime otpExpiry = LocalDateTime.now().plusMinutes(5); // 5 minutes expiry
         
-        // Generate verification token
-        String verificationToken = UUID.randomUUID().toString();
-        user.setVerificationToken(verificationToken);
-        user.setVerificationTokenExpiry(LocalDateTime.now().plusDays(1)); // 24 hours expiry
+        // Store user data temporarily (don't save to database yet)
+        pendingUserService.storePendingUser(request.getEmail(), request, otp, otpExpiry);
         
-        user = userRepository.save(user);
-
-        // Send verification email
-        emailService.sendVerificationEmail(user.getEmail(), user.getName(), verificationToken);
-
-        // Generate tokens
-        String accessToken = jwtUtils.generateToken(user);
-        RefreshToken refreshToken = createRefreshToken(user);
-
-        return createAuthResponse(user, accessToken, refreshToken.getToken());
+        // Send OTP email
+        emailService.sendOtpEmail(request.getEmail(), request.getName(), otp);
+        
+        log.info("Registration initiated for email: {}. OTP sent.", request.getEmail());
+        
+        // Return registration response indicating OTP was sent
+        return new RegistrationResponse(
+            "OTP has been sent to your email address. Please verify to complete registration.",
+            request.getEmail(),
+            request.getName(),
+            true,
+            5
+        );
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -147,6 +145,53 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    public AuthResponse verifyOtp(VerifyOtpRequest request) {
+        // Get pending user data
+        PendingUserService.PendingUser pendingUser = pendingUserService.getPendingUser(request.getEmail());
+        if (pendingUser == null) {
+            throw new BadRequestException("No pending registration found for this email or OTP has expired");
+        }
+        
+        // Validate OTP
+        if (!totpService.validateVerificationCode(pendingUser.getOtp(), request.getOtp(), pendingUser.getOtpExpiry().minusMinutes(5))) {
+            throw new BadRequestException("Invalid or expired OTP");
+        }
+        
+        // OTP is valid, now create the user in database
+        RegisterRequest registerRequest = pendingUser.getRegisterRequest();
+        
+        // Extract college domain from email
+        String emailDomain = extractDomainFromEmail(registerRequest.getEmail());
+        
+        // Find existing college
+        College college = collegeRepository.findByDomain(emailDomain)
+                .orElseThrow(() -> new BadRequestException(
+                    "Email domain '" + emailDomain + "' is not from a recognized educational institution."));
+
+        // Create new user
+        User user = new User();
+        user.setName(registerRequest.getName());
+        user.setEmail(registerRequest.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setCollege(college);
+        user.setYear(registerRequest.getYear());
+        user.setRole(User.Role.STUDENT);
+        user.setEmailVerified(true); // Mark as verified since OTP was validated
+        
+        user = userRepository.save(user);
+        
+        // Remove from pending users
+        pendingUserService.removePendingUser(request.getEmail());
+        
+        // Generate tokens
+        String accessToken = jwtUtils.generateToken(user);
+        RefreshToken refreshToken = createRefreshToken(user);
+
+        log.info("User registration completed for email: {}", user.getEmail());
+        
+        return createAuthResponse(user, accessToken, refreshToken.getToken());
+    }
+
     public void resendVerificationEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
@@ -164,6 +209,26 @@ public class AuthService {
 
         // Send verification email
         emailService.sendVerificationEmail(user.getEmail(), user.getName(), verificationToken);
+    }
+
+    public void resendOtp(ResendOtpRequest request) {
+        // Check if there's a pending user for this email
+        PendingUserService.PendingUser pendingUser = pendingUserService.getPendingUser(request.getEmail());
+        if (pendingUser == null) {
+            throw new BadRequestException("No pending registration found for this email");
+        }
+        
+        // Generate new OTP
+        String newOtp = totpService.generateVerificationCode();
+        LocalDateTime newOtpExpiry = LocalDateTime.now().plusMinutes(5);
+        
+        // Update pending user with new OTP
+        pendingUserService.storePendingUser(request.getEmail(), pendingUser.getRegisterRequest(), newOtp, newOtpExpiry);
+        
+        // Send new OTP email
+        emailService.sendOtpEmail(request.getEmail(), pendingUser.getRegisterRequest().getName(), newOtp);
+        
+        log.info("New OTP sent for email: {}", request.getEmail());
     }
 
     public void logout(String refreshToken) {

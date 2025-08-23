@@ -21,8 +21,8 @@ public class AuthController {
     private String frontendUrl;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        AuthResponse response = authService.register(request);
+    public ResponseEntity<RegistrationResponse> register(@Valid @RequestBody RegisterRequest request) {
+        RegistrationResponse response = authService.register(request);
         return ResponseEntity.ok(response);
     }
 
@@ -44,10 +44,22 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
     }
 
+    @PostMapping("/verify-otp")
+    public ResponseEntity<AuthResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        AuthResponse response = authService.verifyOtp(request);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/resend-verification")
     public ResponseEntity<Map<String, String>> resendVerificationEmail(@RequestParam String email) {
         authService.resendVerificationEmail(email);
         return ResponseEntity.ok(Map.of("message", "Verification email sent"));
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<Map<String, String>> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+        authService.resendOtp(request);
+        return ResponseEntity.ok(Map.of("message", "New OTP sent to your email"));
     }
 
     @PostMapping("/logout")

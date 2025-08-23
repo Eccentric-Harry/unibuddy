@@ -63,7 +63,7 @@ export function validateCollegeEmail(email: string, allowedDomains?: string[]): 
   }
   
   // Basic check for .edu domains
-  return email.endsWith('.edu');
+  return email.endsWith('.ac.in');
 }
 
 export function truncateText(text: string, maxLength: number): string {

@@ -62,8 +62,14 @@ api.interceptors.response.use(
 
 // Auth API calls
 export const authApi = {
-  register: (data: RegisterRequest): Promise<AxiosResponse<{ message: string; next: string }>> =>
+  register: (data: RegisterRequest): Promise<AxiosResponse<{ message: string; email: string; name: string; otpSent: boolean; otpExpiryMinutes: number }>> =>
     api.post('/auth/register', data),
+  
+  verifyOtp: (data: { email: string; otp: string }): Promise<AxiosResponse<AuthResponse>> =>
+    api.post('/auth/verify-otp', data),
+  
+  resendOtp: (data: { email: string }): Promise<AxiosResponse<{ message: string }>> =>
+    api.post('/auth/resend-otp', data),
   
   login: (data: LoginRequest): Promise<AxiosResponse<AuthResponse>> =>
     api.post('/auth/login', data),

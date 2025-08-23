@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store/authStore';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
+import { OtpVerificationForm } from './components/auth/OtpVerificationForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Dashboard } from './pages/Dashboard';
 import './App.css';
@@ -25,6 +26,10 @@ function App() {
             <Route 
               path="/register" 
               element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterForm />} 
+            />
+            <Route 
+              path="/verify-otp" 
+              element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <OtpVerificationForm />} 
             />
             
             {/* Protected routes */}

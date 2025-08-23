@@ -60,6 +60,12 @@ public class User implements UserDetails {
     @Column(name = "verification_token_expiry")
     private LocalDateTime verificationTokenExpiry;
 
+    @Column(name = "verification_otp")
+    private String verificationOtp;
+
+    @Column(name = "verification_otp_expiry")
+    private LocalDateTime verificationOtpExpiry;
+
     @Column(name = "reset_password_token")
     private String resetPasswordToken;
 
@@ -103,9 +109,8 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        // Temporarily return true to test password verification
-        // TODO: Change back to return emailVerified; once testing is complete
-        return true;
+        // User should be enabled only if email is verified
+        return emailVerified != null && emailVerified;
     }
 
     public enum Role {

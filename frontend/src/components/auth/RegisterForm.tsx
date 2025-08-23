@@ -33,7 +33,6 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
   const { register: registerUser, isLoading, error, clearError } = useAuthStore();
 
@@ -49,37 +48,19 @@ export function RegisterForm() {
     try {
       clearError();
       const { confirmPassword, ...registerData } = data;
-      await registerUser(registerData as RegisterRequest);
-      setIsSuccess(true);
+      const response = await registerUser(registerData as RegisterRequest);
       
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // Navigate to OTP verification page with user data
+      navigate('/verify-otp', {
+        state: {
+          email: response.email,
+          name: response.name
+        }
+      });
     } catch (error) {
       // Error is handled by the store
     }
   };
-
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center">
-                <GraduationCap className="text-white w-6 h-6" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl text-center text-green-600">Registration Successful!</CardTitle>
-            <CardDescription className="text-center">
-              Please check your email for verification instructions. You'll be redirected to login shortly.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">

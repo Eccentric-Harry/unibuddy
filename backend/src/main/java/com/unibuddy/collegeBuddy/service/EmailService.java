@@ -49,6 +49,34 @@ public class EmailService {
         }
     }
 
+    public void sendOtpEmail(String toEmail, String userName, String otp) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setFrom(fromEmail);
+            message.setSubject("College Buddy - Email Verification Code");
+            
+            String text = String.format(
+                "Hi %s,\n\n" +
+                "Welcome to College Buddy! Please use the following verification code to complete your registration:\n\n" +
+                "Verification Code: %s\n\n" +
+                "This code will expire in 5 minutes.\n\n" +
+                "If you didn't create an account with College Buddy, please ignore this email.\n\n" +
+                "Best regards,\n" +
+                "College Buddy Team",
+                userName, otp
+            );
+            
+            message.setText(text);
+            mailSender.send(message);
+            
+            log.info("OTP email sent to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send OTP email to: {}", toEmail, e);
+            throw new RuntimeException("Failed to send OTP email");
+        }
+    }
+
     public void sendPasswordResetEmail(String toEmail, String userName, String resetToken) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();

@@ -13,7 +13,9 @@ interface AuthState {
   
   // Actions
   login: (credentials: LoginRequest) => Promise<void>;
-  register: (data: RegisterRequest) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<{ otpSent: boolean; email: string; name: string }>;
+  verifyOtp: (data: { email: string; otp: string }) => Promise<void>;
+  resendOtp: (data: { email: string }) => Promise<void>;
   logout: () => void;
   clearError: () => void;
   getCurrentUser: () => Promise<void>;
@@ -63,10 +65,62 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         
         try {
-          await authApi.register(data);
+          const response = await authApi.register(data);
           set({ isLoading: false });
+          // Return the registration response data
+          return {
+            otpSent: response.data.otpSent,
+            email: response.data.email,
+            name: response.data.name
+          };
         } catch (error: any) {
           const errorMessage = error.response?.data?.message || 'Registration failed';
+          set({
+            error: errorMessage,
+            isLoading: false,
+          });
+          throw error;
+        }
+      },
+
+      verifyOtp: async (data: { email: string; otp: string }) => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          const response = await authApi.verifyOtp(data);
+          const { accessToken, refreshToken, user } = response.data;
+          
+          // Store tokens in localStorage
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', refreshToken);
+          
+          set({
+            user,
+            accessToken,
+            refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || 'OTP verification failed';
+          set({
+            error: errorMessage,
+            isLoading: false,
+            isAuthenticated: false,
+          });
+          throw error;
+        }
+      },
+
+      resendOtp: async (data: { email: string }) => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          await authApi.resendOtp(data);
+          set({ isLoading: false });
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || 'Failed to resend OTP';
           set({
             error: errorMessage,
             isLoading: false,
