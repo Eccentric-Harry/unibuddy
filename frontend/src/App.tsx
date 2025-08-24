@@ -5,7 +5,9 @@ import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { OtpVerificationForm } from './components/auth/OtpVerificationForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { Dashboard } from './pages/Dashboard';
+import Dashboard from './pages/Dashboard';
+import { MarketplacePage } from './pages/MarketplacePage';
+import ChatPage from './pages/ChatPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -38,6 +40,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketplace"
+              element={
+                <ProtectedRoute>
+                  <MarketplacePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <ChatPage />
                 </ProtectedRoute>
               }
             />

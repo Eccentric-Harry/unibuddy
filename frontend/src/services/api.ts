@@ -8,7 +8,10 @@ import type {
   Message,
   Listing,
   Job,
-  TutorProfile 
+  TutorProfile,
+  Conversation,
+  GlobalChat,
+  GlobalMessage,
 } from '../types';
 
 // Create axios instance with base configuration
@@ -113,15 +116,17 @@ export const chatApi = {
 
 // Marketplace API calls
 export const marketplaceApi = {
-  getListings: (params?: {
+  getListings: (filters?: {
     category?: string;
+    q?: string;
     minPrice?: number;
     maxPrice?: number;
-    search?: string;
     page?: number;
     size?: number;
-  }): Promise<AxiosResponse<{ content: Listing[]; totalPages: number }>> =>
-    api.get('/listings', { params }),
+    sort?: string;
+    direction?: 'ASC' | 'DESC';
+  }): Promise<AxiosResponse<{ content: Listing[]; totalPages: number; totalElements: number }>> =>
+    api.get('/listings', { params: filters }),
   
   getListing: (id: string): Promise<AxiosResponse<Listing>> =>
     api.get(`/listings/${id}`),
@@ -131,14 +136,39 @@ export const marketplaceApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   
-  updateListing: (id: string, data: Partial<Listing>): Promise<AxiosResponse<Listing>> =>
-    api.patch(`/listings/${id}`, data),
-  
-  deleteListing: (id: string): Promise<AxiosResponse<void>> =>
-    api.delete(`/listings/${id}`),
-  
-  reportListing: (id: string, reason: string): Promise<AxiosResponse<void>> =>
+  reportListing: (id: string, reason?: string): Promise<AxiosResponse<void>> =>
     api.post(`/listings/${id}/report`, { reason }),
+};
+
+// Conversation API calls
+export const conversationApi = {
+  getConversations: (page = 0, size = 20): Promise<AxiosResponse<{ content: Conversation[]; totalPages: number; totalElements: number }>> =>
+    api.get('/conversations', { params: { page, size } }),
+  
+  getConversationMessages: (conversationId: string, page = 0, size = 50): Promise<AxiosResponse<{ content: Message[]; totalPages: number; totalElements: number }>> =>
+    api.get(`/conversations/${conversationId}/messages`, { params: { page, size } }),
+  
+  sendMessage: (conversationId: string, data: FormData): Promise<AxiosResponse<Message>> =>
+    api.post(`/conversations/${conversationId}/messages`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  
+  startConversation: (listingId: string): Promise<AxiosResponse<Conversation>> =>
+    api.post(`/conversations/start/${listingId}`),
+};
+
+// Global Chat API calls
+export const globalChatApi = {
+  getGlobalChats: (): Promise<AxiosResponse<GlobalChat[]>> =>
+    api.get('/global-chats'),
+  
+  getGlobalChatMessages: (globalChatId: string, page = 0, size = 50): Promise<AxiosResponse<{ content: GlobalMessage[]; totalPages: number; totalElements: number }>> =>
+    api.get(`/global-chats/${globalChatId}/messages`, { params: { page, size } }),
+  
+  sendGlobalMessage: (globalChatId: string, data: FormData): Promise<AxiosResponse<GlobalMessage>> =>
+    api.post(`/global-chats/${globalChatId}/messages`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 };
 
 // Jobs API calls
