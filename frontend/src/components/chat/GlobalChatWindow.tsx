@@ -162,7 +162,6 @@ export function GlobalChatWindow({ globalChatId, globalChat }: GlobalChatWindowP
       <div className="flex-1 overflow-y-auto bg-gray-50 min-h-0">
         <MessageList 
           messages={convertedMessages} 
-          loading={messagesLoading}
         />
         <div ref={messagesEndRef} />
       </div>
