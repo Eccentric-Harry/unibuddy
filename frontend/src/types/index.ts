@@ -36,30 +36,122 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface Message {
-  id: string;
-  senderId: string;
-  collegeId: number;
-  channel: string;
-  body: string;
-  attachments?: any[];
-  edited: boolean;
-  deleted: boolean;
-  createdAt: string;
-  sender?: User;
-}
-
 export interface Listing {
   id: string;
-  sellerId: string;
   title: string;
   description: string;
   price: number;
   category: string;
   images: string[];
-  status: 'active' | 'reserved' | 'sold';
+  status: 'ACTIVE' | 'SOLD' | 'INACTIVE';
   createdAt: string;
-  seller?: User;
+  updatedAt: string;
+  seller: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    year?: number;
+    collegeName?: string;
+  };
+}
+
+export interface ListingFilters {
+  category?: string;
+  q?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  page?: number;
+  size?: number;
+  sort?: string;
+  direction?: 'ASC' | 'DESC';
+}
+
+export interface CreateListingRequest {
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  images?: FileList;
+}
+
+export interface Conversation {
+  id: string;
+  listing: {
+    id: string;
+    title: string;
+    firstImage?: string;
+  };
+  otherUser: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+  lastMessage?: {
+    messageText: string;
+    createdAt: string;
+    fromCurrentUser: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Message {
+  id: string;
+  messageText: string;
+  imageUrl?: string;
+  sender: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+  createdAt: string;
+}
+
+export interface SendMessageRequest {
+  messageText: string;
+  image?: File;
+}
+
+export interface GlobalChat {
+  id: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  createdAt: string;
+  collegeId: number;
+  collegeName: string;
+  lastMessage?: {
+    messageText: string;
+    createdAt: string;
+    senderName: string;
+    senderId: string;
+  };
+  messageCount: number;
+}
+
+export interface GlobalMessage {
+  id: string;
+  messageText: string;
+  imageUrl?: string;
+  createdAt: string;
+  sender: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    year?: number;
+  };
+  globalChatId: string;
+}
+
+export interface SendGlobalMessageRequest {
+  messageText: string;
+  image?: File;
+}
+
+export interface ChatTab {
+  id: 'marketplace' | 'global';
+  name: string;
+  count?: number;
 }
 
 export interface Job {
