@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Hash, Users, Settings } from 'lucide-react';
 import { globalChatApi } from '../../services/api';
-import { MessageList } from './MessageList';
+import MessageList from './MessageList';
 import { MessageComposer } from './MessageComposer';
 import { Button } from '../ui/button';
 import { useAuthStore } from '../../store/authStore';
@@ -20,7 +20,7 @@ export function GlobalChatWindow({ globalChatId, globalChat }: GlobalChatWindowP
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
-  const { data: messagesData, isLoading: messagesLoading } = useQuery({
+  const { data: messagesData } = useQuery({
     queryKey: ['global-messages', globalChatId],
     queryFn: () => globalChatApi.getGlobalChatMessages(globalChatId),
     enabled: !!globalChatId,

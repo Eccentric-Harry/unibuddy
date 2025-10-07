@@ -5,13 +5,17 @@ interface ImageModalProps {
   isOpen: boolean;
   onClose: () => void;
   alt?: string;
+  onNext?: () => void;
+  onPrevious?: () => void;
 }
 
 export const ImageModal: React.FC<ImageModalProps> = ({ 
   imageUrl, 
   isOpen, 
   onClose, 
-  alt = "Image" 
+  alt = "Image",
+  onNext,
+  onPrevious
 }) => {
   if (!isOpen) return null;
 
@@ -23,7 +27,7 @@ export const ImageModal: React.FC<ImageModalProps> = ({
       <div className="relative max-w-4xl max-h-full">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all"
+          className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all z-10"
         >
           <svg 
             className="w-6 h-6" 
@@ -39,7 +43,55 @@ export const ImageModal: React.FC<ImageModalProps> = ({
             />
           </svg>
         </button>
-        
+
+        {onPrevious && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onPrevious();
+            }}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all z-10"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+        )}
+
+        {onNext && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onNext();
+            }}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all z-10"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        )}
+
         <img
           src={imageUrl}
           alt={alt}

@@ -1,127 +1,134 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Filter, Grid, List } from 'lucide-react';
-import { marketplaceApi } from '../services/api';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '../components/ui';
+import { useToast } from '../components/ui/use-toast';
 import { ListingGrid } from '../components/marketplace/ListingGrid';
-import { ListingFilters } from '../components/marketplace/ListingFilters';
+import { ListingFilters as FiltersComponent } from '../components/marketplace/ListingFilters';
 import { CreateListingModal } from '../components/marketplace/CreateListingModal';
-import { Button } from '../components/ui/button';
-import type { ListingFilters as ListingFiltersType } from '../types';
+import { getListings } from '../services/api';
+import type { ListingFilters, ListingResponse } from '../types/marketplace';
+import { useAuthStore } from '../store/authStore';
 
-export function MarketplacePage() {
-  const [filters, setFilters] = useState<ListingFiltersType>({
+export default function MarketplacePage() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user, isAuthenticated } = useAuthStore();
+
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [listings, setListings] = useState<ListingResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [filters, setFilters] = useState<ListingFilters>({
     page: 0,
-    size: 20,
-    sort: 'createdAt',
-    direction: 'DESC'
-  });
-  const [showFilters, setShowFilters] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-  const { data: listingsData, isLoading, refetch } = useQuery({
-    queryKey: ['listings', filters],
-    queryFn: () => marketplaceApi.getListings(filters),
+    size: 12,
+    sort: 'createdAt,desc'
   });
 
-  const handleFiltersChange = (newFilters: ListingFiltersType) => {
-    setFilters({ ...newFilters, page: 0 });
+  const fetchListings = async (currentFilters: ListingFilters) => {
+    setIsLoading(true);
+    try {
+      const response = await getListings(currentFilters);
+      setListings(response.data.content);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.number);
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load listings. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFilterChange = (newFilters: ListingFilters) => {
+    // Reset to first page when filters change
+    const updatedFilters = {
+      ...filters,
+      ...newFilters,
+      page: 0
+    };
+    setFilters(updatedFilters);
+    fetchListings(updatedFilters);
   };
 
   const handlePageChange = (page: number) => {
-    setFilters(prev => ({ ...prev, page }));
+    const updatedFilters = { ...filters, page };
+    setFilters(updatedFilters);
+    fetchListings(updatedFilters);
+  };
+
+  const handleCreateClick = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: 'Login Required',
+        description: 'You must be logged in to create a listing.',
+        variant: 'destructive'
+      });
+      navigate('/login', { state: { from: '/marketplace' } });
+      return;
+    }
+
+    // Using optional chaining and providing a fallback to avoid TypeScript errors
+    const isEmailVerified = user?.emailVerified !== undefined ? user.emailVerified : false;
+    if (!isEmailVerified) {
+      toast({
+        title: 'Verification Required',
+        description: 'You must verify your college email before creating listings.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setCreateModalOpen(true);
   };
 
   const handleCreateSuccess = () => {
-    setShowCreateModal(false);
-    refetch();
+    fetchListings(filters);
   };
 
+  useEffect(() => {
+    fetchListings(filters);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">Marketplace</h1>
-              <div className="hidden sm:flex items-center space-x-2">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                Filters
-              </Button>
-              <Button onClick={() => setShowCreateModal(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Listing
-              </Button>
-            </div>
-          </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Campus Marketplace</h1>
+          <p className="text-gray-600">
+            Buy and sell items within your college community
+          </p>
         </div>
+
+        <Button
+          size="lg"
+          onClick={handleCreateClick}
+          className="mt-4 md:mt-0"
+        >
+          Create Listing
+        </Button>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search for items..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={filters.q || ''}
-              onChange={(e) => handleFiltersChange({ ...filters, q: e.target.value })}
-            />
-          </div>
-        </div>
-      </div>
+      <FiltersComponent
+        onFilterChange={handleFilterChange}
+        initialFilters={filters}
+      />
 
-      {/* Filters */}
-      {showFilters && (
-        <div className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <ListingFilters filters={filters} onFiltersChange={handleFiltersChange} />
-          </div>
-        </div>
-      )}
+      <ListingGrid
+        listings={listings}
+        isLoading={isLoading}
+        onPageChange={handlePageChange}
+        totalPages={totalPages}
+        currentPage={currentPage}
+      />
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ListingGrid
-          listings={listingsData?.data.content || []}
-          loading={isLoading}
-          viewMode={viewMode}
-          totalPages={listingsData?.data.totalPages || 0}
-          currentPage={filters.page || 0}
-          onPageChange={handlePageChange}
-        />
-      </div>
-
-      {/* Create Listing Modal */}
       <CreateListingModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
         onSuccess={handleCreateSuccess}
       />
     </div>

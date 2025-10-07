@@ -16,7 +16,7 @@ class WebSocketService {
       }
 
       // Create SockJS connection
-      const socket = new SockJS(`${import.meta.env.VITE_API_URL || 'http://localhost:8081/api'}/ws`);
+      const socket = new SockJS(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/ws`);
       
       this.client = new Client({
         webSocketFactory: () => socket,

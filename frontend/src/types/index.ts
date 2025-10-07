@@ -3,6 +3,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  emailVerified?: boolean;
   collegeId: number;
   year?: number;
   role: 'student' | 'admin' | 'moderator';
@@ -53,17 +54,6 @@ export interface Listing {
     year?: number;
     collegeName?: string;
   };
-}
-
-export interface ListingFilters {
-  category?: string;
-  q?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  page?: number;
-  size?: number;
-  sort?: string;
-  direction?: 'ASC' | 'DESC';
 }
 
 export interface CreateListingRequest {
@@ -182,3 +172,6 @@ export interface ApiError {
 }
 
 export type LoadingState = 'idle' | 'loading' | 'error' | 'success';
+
+// Re-export marketplace types
+export * from './marketplace';

@@ -55,7 +55,7 @@ export default function Dashboard() {
     {
       id: '1',
       type: 'message',
-      content: 'New message from Sarah',
+      content: 'New message from Harinadh',
       time: '2 minutes ago',
     },
     {

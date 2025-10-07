@@ -71,7 +71,7 @@ export function RegisterForm() {
               <span className="text-white font-bold text-xl">CB</span>
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Join College Buddy</CardTitle>
+          <CardTitle className="text-2xl text-center">Join EduLink</CardTitle>
           <CardDescription className="text-center">
             Connect with your campus community
           </CardDescription>

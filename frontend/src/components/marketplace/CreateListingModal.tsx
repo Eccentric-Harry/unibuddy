@@ -1,275 +1,385 @@
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { X, Upload, Trash2 } from 'lucide-react';
-import { marketplaceApi } from '../../services/api';
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import type { CreateListingRequest } from '../../types';
-
-const createListingSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(255, 'Title must be less than 255 characters'),
-  description: z.string().min(1, 'Description is required').max(2000, 'Description must be less than 2000 characters'),
-  price: z.number().min(0, 'Price must be positive').max(999999.99, 'Price is too high'),
-  category: z.string().min(1, 'Category is required'),
-});
+import { useToast } from '../ui/use-toast';
+import { createListing } from '../../services/api';
+import { uploadImage, testSupabaseConnection, checkAuthState } from '../../services/supabase';
+import { useAuthStore } from '../../store/authStore';
+import type { ListingImage } from '../../types/marketplace';
+import imageCompression from 'browser-image-compression';
 
 interface CreateListingModalProps {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 const CATEGORIES = [
-  'Electronics',
   'Books',
-  'Furniture',
+  'Electronics',
   'Clothing',
-  'Sports',
-  'Kitchen',
-  'Other'
+  'Furniture',
+  'Tickets',
+  'Services',
+  'Miscellaneous'
 ];
 
-export function CreateListingModal({ open, onClose, onSuccess }: CreateListingModalProps) {
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+const MAX_IMAGES = 5;
+const MAX_FILE_SIZE_MB = 5;
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<CreateListingRequest>({
-    resolver: zodResolver(createListingSchema),
+export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListingModalProps) {
+  const { user, accessToken } = useAuthStore();
+  const { toast } = useToast();
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [images, setImages] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [connectionStatus, setConnectionStatus] = useState<{connected: boolean, message?: string}>({
+    connected: false
   });
 
-  const createListingMutation = useMutation({
-    mutationFn: (data: FormData) => marketplaceApi.createListing(data),
-    onSuccess: () => {
-      onSuccess();
-      handleClose();
-    },
-  });
+  useEffect(() => {
+    // Check Supabase connection when the component mounts
+    const checkConnection = async () => {
+      try {
+        const result = await testSupabaseConnection();
+        setConnectionStatus({
+          connected: result.success,
+          message: result.success ? result.message : result.error
+        });
 
-  const handleClose = () => {
-    reset();
-    setSelectedImages([]);
-    setImagePreviews([]);
-    onClose();
-  };
+        if (result.success) {
+          console.log('Supabase connection successful');
+        } else {
+          console.error('Supabase connection failed:', result.error);
+        }
 
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    
-    if (selectedImages.length + files.length > 5) {
-      alert('Maximum 5 images allowed');
+        // Also check authentication status
+        const authStatus = await checkAuthState();
+        console.log('Supabase auth status:', authStatus.isAuthenticated ? 'Authenticated' : 'Not authenticated');
+      } catch (error) {
+        console.error('Error checking Supabase connection:', error);
+        setConnectionStatus({
+          connected: false,
+          message: 'Error checking connection'
+        });
+      }
+    };
+
+    checkConnection();
+  }, []);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const selectedFiles = Array.from(e.target.files);
+
+    // Check file count
+    if (images.length + selectedFiles.length > MAX_IMAGES) {
+      toast({
+        title: 'Too many images',
+        description: `You can upload a maximum of ${MAX_IMAGES} images.`,
+        variant: 'destructive'
+      });
       return;
     }
 
-    // Validate file size (5MB each)
-    const invalidFiles = files.filter(file => file.size > 5 * 1024 * 1024);
-    if (invalidFiles.length > 0) {
-      alert('Some files are too large. Maximum size is 5MB per image.');
-      return;
-    }
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-    const invalidTypes = files.filter(file => !validTypes.includes(file.type));
-    if (invalidTypes.length > 0) {
-      alert('Only JPEG, PNG, and WebP images are allowed.');
-      return;
-    }
-
-    const newImages = [...selectedImages, ...files];
-    setSelectedImages(newImages);
-
-    // Create previews
-    const newPreviews = [...imagePreviews];
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        newPreviews.push(e.target?.result as string);
-        setImagePreviews([...newPreviews]);
-      };
-      reader.readAsDataURL(file);
+    // Check file size and type
+    const invalidFiles = selectedFiles.filter(file => {
+      const sizeInMB = file.size / (1024 * 1024);
+      const isValidType = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+      return sizeInMB > MAX_FILE_SIZE_MB || !isValidType;
     });
+
+    if (invalidFiles.length > 0) {
+      toast({
+        title: 'Invalid files',
+        description: `Some files are too large (max ${MAX_FILE_SIZE_MB}MB) or not in a supported format (JPG, PNG, WebP).`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setImages(prev => [...prev, ...selectedFiles]);
   };
 
   const removeImage = (index: number) => {
-    const newImages = selectedImages.filter((_, i) => i !== index);
-    const newPreviews = imagePreviews.filter((_, i) => i !== index);
-    setSelectedImages(newImages);
-    setImagePreviews(newPreviews);
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const onSubmit = (data: CreateListingRequest) => {
-    const formData = new FormData();
-    formData.append('title', data.title);
-    formData.append('description', data.description);
-    formData.append('price', data.price.toString());
-    formData.append('category', data.category);
+  const compressImage = async (file: File): Promise<File> => {
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1200,
+      useWebWorker: true,
+    };
 
-    selectedImages.forEach((image) => {
-      formData.append(`images`, image);
-    });
-
-    createListingMutation.mutate(formData);
+    try {
+      return await imageCompression(file, options);
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      return file;
+    }
   };
 
-  if (!open) return null;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user?.id) {
+      toast({
+        title: 'Authentication error',
+        description: 'You must be logged in to create a listing.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!title || !description || !price || !category) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (images.length === 0) {
+      toast({
+        title: 'No images',
+        description: 'Please upload at least one image.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!connectionStatus.connected) {
+      toast({
+        title: 'Connection error',
+        description: 'Cannot connect to storage service. Please try again later.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // Check authentication status
+      const authStatus = await checkAuthState();
+      console.log('Auth status before upload:', authStatus.isAuthenticated ? 'Authenticated' : 'Not authenticated');
+
+      // Compress and upload images
+      const imagePromises = images.map(async (file, index) => {
+        try {
+          const compressedFile = await compressImage(file);
+          const uploadedImage = await uploadImage(compressedFile, user.id);
+          setUploadProgress(prev => prev + (100 / images.length));
+          return uploadedImage;
+        } catch (error) {
+          console.error(`Error uploading image ${index}:`, error);
+          // Continue with other uploads even if this one failed
+          setUploadProgress(prev => prev + (100 / images.length));
+          return null;
+        }
+      });
+
+      const uploadedImages = await Promise.all(imagePromises);
+      const validImages = uploadedImages.filter(Boolean) as ListingImage[];
+
+      if (validImages.length === 0) {
+        throw new Error('Failed to upload images');
+      }
+
+      // Create listing
+      await createListing({
+        title,
+        description,
+        price: parseFloat(price),
+        category,
+        images: validImages
+      });
+
+      toast({
+        title: 'Listing created',
+        description: 'Your listing has been created successfully.',
+      });
+
+      // Reset form and close modal
+      setTitle('');
+      setDescription('');
+      setPrice('');
+      setCategory(CATEGORIES[0]);
+      setImages([]);
+      setIsUploading(false);
+      setUploadProgress(0);
+
+      onSuccess();
+      onClose();
+    } catch (error: any) {
+      console.error('Error creating listing:', error);
+
+      // Provide more specific error messages
+      let errorMessage = 'Failed to create listing. Please try again.';
+
+      if (error?.message?.includes('row-level security policy')) {
+        errorMessage = 'Permission denied. You may not have access to upload files.';
+      } else if (error?.message?.includes('bucket')) {
+        errorMessage = 'Storage bucket not found. Please contact support.';
+      }
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+      setIsUploading(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Create New Listing</h2>
-          <Button variant="outline" size="sm" onClick={handleClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Create New Listing</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-          {/* Title */}
-          <div>
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              {...register('title')}
-              placeholder="What are you selling?"
-              className={errors.title ? 'border-red-500' : ''}
-            />
-            {errors.title && (
-              <p className="text-sm text-red-600 mt-1">{errors.title.message}</p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div>
-            <Label htmlFor="description">Description *</Label>
-            <textarea
-              id="description"
-              {...register('description')}
-              rows={4}
-              placeholder="Describe your item..."
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors.description && (
-              <p className="text-sm text-red-600 mt-1">{errors.description.message}</p>
-            )}
-          </div>
-
-          {/* Price and Category */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
-              <Label htmlFor="price">Price ($) *</Label>
+              <Label htmlFor="title">Title</Label>
               <Input
-                id="price"
-                type="number"
-                step="0.01"
-                {...register('price', { valueAsNumber: true })}
-                placeholder="0.00"
-                className={errors.price ? 'border-red-500' : ''}
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="What are you selling?"
+                required
+                maxLength={255}
+                disabled={isUploading}
               />
-              {errors.price && (
-                <p className="text-sm text-red-600 mt-1">{errors.price.message}</p>
-              )}
             </div>
 
             <div>
-              <Label htmlFor="category">Category *</Label>
-              <select
-                id="category"
-                {...register('category')}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.category ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select a category</option>
-                {CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              {errors.category && (
-                <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
-              )}
+              <Label htmlFor="description">Description</Label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe your item"
+                required
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                rows={4}
+                disabled={isUploading}
+              />
             </div>
-          </div>
 
-          {/* Images */}
-          <div>
-            <Label>Images (Max 5)</Label>
-            <div className="mt-2">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 mb-2">
-                  Drag and drop images here, or click to select
-                </p>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                  id="image-upload"
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  required
+                  disabled={isUploading}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                >
-                  Select Images
-                </Button>
               </div>
 
-              {/* Image Previews */}
-              {imagePreviews.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                  {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative group">
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                  disabled={isUploading}
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat.toLowerCase()}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="images">Images (Max {MAX_IMAGES})</Label>
+              <div className="mt-2">
+                <Input
+                  id="images"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={handleImageSelect}
+                  disabled={isUploading || images.length >= MAX_IMAGES}
+                  className="cursor-pointer"
+                />
+              </div>
+
+              {images.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {images.map((file, index) => (
+                    <div key={index} className="relative">
                       <img
-                        src={preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg"
+                        src={URL.createObjectURL(file)}
+                        alt={`Preview ${index}`}
+                        className="w-24 h-24 object-cover rounded-md"
                       />
-                      <Button
+                      <button
                         type="button"
-                        variant="outline"
-                        size="sm"
-                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm"
                         onClick={() => removeImage(index)}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                        disabled={isUploading}
                       >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                        &times;
+                      </button>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {isUploading && (
+                <div className="mt-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div
+                      className="bg-blue-600 h-2.5 rounded-full"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-center mt-1">
+                    Uploading... {Math.round(uploadProgress)}%
+                  </p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
-            <Button type="button" variant="outline" onClick={handleClose}>
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isUploading}
+            >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={createListingMutation.isPending}
-            >
-              {createListingMutation.isPending ? 'Creating...' : 'Create Listing'}
+            <Button type="submit" disabled={isUploading}>
+              {isUploading ? 'Creating...' : 'Create Listing'}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
