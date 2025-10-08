@@ -39,11 +39,15 @@ public class Listing {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private List<String> images;
+    private List<ListingImage> images;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reserved_by")
+    private User reservedBy;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -58,6 +62,15 @@ public class Listing {
     private LocalDateTime updatedAt;
 
     public enum Status {
-        ACTIVE, SOLD, INACTIVE
+        ACTIVE, RESERVED, SOLD, INACTIVE
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ListingImage {
+        private String url;
+        private String path;
+        private String alt;
     }
 }

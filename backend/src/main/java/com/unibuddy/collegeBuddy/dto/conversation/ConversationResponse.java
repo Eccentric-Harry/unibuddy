@@ -18,7 +18,7 @@ public class ConversationResponse {
     public static class ListingInfo {
         private UUID id;
         private String title;
-        private String firstImage;
+        private String firstImageUrl; // Changed from firstImage to firstImageUrl to be more descriptive
     }
 
     @Data
