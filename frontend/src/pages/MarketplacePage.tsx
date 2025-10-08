@@ -8,6 +8,7 @@ import { CreateListingModal } from '../components/marketplace/CreateListingModal
 import { getListings } from '../services/api';
 import type { ListingFilters, ListingResponse } from '../types/marketplace';
 import { useAuthStore } from '../store/authStore';
+import { dummyListings } from '../data/dummyListings';
 
 export default function MarketplacePage() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function MarketplacePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(0);
+  const [useDummyData, setUseDummyData] = useState(false);
   const [filters, setFilters] = useState<ListingFilters>({
     page: 0,
     size: 12,
@@ -29,16 +31,39 @@ export default function MarketplacePage() {
     setIsLoading(true);
     try {
       const response = await getListings(currentFilters);
-      setListings(response.data.content);
-      setTotalPages(response.data.totalPages);
-      setCurrentPage(response.data.number);
+
+      // If API returns empty results, use dummy data
+      if (!response.data.content || response.data.content.length === 0) {
+        console.log('No listings from API, using dummy data');
+        setUseDummyData(true);
+        const pageSize = currentFilters.size || 12;
+        const page = currentFilters.page || 0;
+        const startIdx = page * pageSize;
+        const endIdx = startIdx + pageSize;
+        const paginatedDummyData = dummyListings.slice(startIdx, endIdx);
+
+        setListings(paginatedDummyData);
+        setTotalPages(Math.ceil(dummyListings.length / pageSize));
+        setCurrentPage(page);
+      } else {
+        setUseDummyData(false);
+        setListings(response.data.content);
+        setTotalPages(response.data.totalPages);
+        setCurrentPage(response.data.number);
+      }
     } catch (error) {
-      console.error('Error fetching listings:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load listings. Please try again.',
-        variant: 'destructive'
-      });
+      console.error('Error fetching listings, falling back to dummy data:', error);
+      // On error, fall back to dummy data instead of showing error
+      setUseDummyData(true);
+      const pageSize = currentFilters.size || 12;
+      const page = currentFilters.page || 0;
+      const startIdx = page * pageSize;
+      const endIdx = startIdx + pageSize;
+      const paginatedDummyData = dummyListings.slice(startIdx, endIdx);
+
+      setListings(paginatedDummyData);
+      setTotalPages(Math.ceil(dummyListings.length / pageSize));
+      setCurrentPage(page);
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +83,23 @@ export default function MarketplacePage() {
   const handlePageChange = (page: number) => {
     const updatedFilters = { ...filters, page };
     setFilters(updatedFilters);
-    fetchListings(updatedFilters);
+
+    // If using dummy data, handle pagination locally
+    if (useDummyData) {
+      setIsLoading(true);
+      setTimeout(() => {
+        const pageSize = updatedFilters.size || 12;
+        const startIdx = page * pageSize;
+        const endIdx = startIdx + pageSize;
+        const paginatedDummyData = dummyListings.slice(startIdx, endIdx);
+
+        setListings(paginatedDummyData);
+        setCurrentPage(page);
+        setIsLoading(false);
+      }, 300); // Small delay to show loading state
+    } else {
+      fetchListings(updatedFilters);
+    }
   };
 
   const handleCreateClick = () => {

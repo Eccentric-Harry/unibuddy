@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import MarketplacePage from './pages/MarketplacePage';
 import ListingDetailPage from './pages/ListingDetailPage';
 import ChatPage from './pages/ChatPage';
+import JobsPage from './pages/JobsPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -49,6 +50,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MarketplacePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/jobs"
+              element={
+                <ProtectedRoute>
+                  <JobsPage />
                 </ProtectedRoute>
               }
             />

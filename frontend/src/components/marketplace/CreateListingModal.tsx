@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useToast } from '../ui/use-toast';
-import { createListing } from '../../services/api';
-import { uploadImage, testSupabaseConnection, checkAuthState } from '../../services/supabase';
+import { createListing, storageApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import type { ListingImage } from '../../types/marketplace';
 import imageCompression from 'browser-image-compression';
@@ -30,7 +29,7 @@ const MAX_IMAGES = 5;
 const MAX_FILE_SIZE_MB = 5;
 
 export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListingModalProps) {
-  const { user, accessToken } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
 
   const [title, setTitle] = useState('');
@@ -40,40 +39,6 @@ export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListing
   const [images, setImages] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [connectionStatus, setConnectionStatus] = useState<{connected: boolean, message?: string}>({
-    connected: false
-  });
-
-  useEffect(() => {
-    // Check Supabase connection when the component mounts
-    const checkConnection = async () => {
-      try {
-        const result = await testSupabaseConnection();
-        setConnectionStatus({
-          connected: result.success,
-          message: result.success ? result.message : result.error
-        });
-
-        if (result.success) {
-          console.log('Supabase connection successful');
-        } else {
-          console.error('Supabase connection failed:', result.error);
-        }
-
-        // Also check authentication status
-        const authStatus = await checkAuthState();
-        console.log('Supabase auth status:', authStatus.isAuthenticated ? 'Authenticated' : 'Not authenticated');
-      } catch (error) {
-        console.error('Error checking Supabase connection:', error);
-        setConnectionStatus({
-          connected: false,
-          message: 'Error checking connection'
-        });
-      }
-    };
-
-    checkConnection();
-  }, []);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -158,33 +123,19 @@ export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListing
       return;
     }
 
-    if (!connectionStatus.connected) {
-      toast({
-        title: 'Connection error',
-        description: 'Cannot connect to storage service. Please try again later.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
-      // Check authentication status
-      const authStatus = await checkAuthState();
-      console.log('Auth status before upload:', authStatus.isAuthenticated ? 'Authenticated' : 'Not authenticated');
-
-      // Compress and upload images
+      // Compress and upload images to backend
       const imagePromises = images.map(async (file, index) => {
         try {
           const compressedFile = await compressImage(file);
-          const uploadedImage = await uploadImage(compressedFile, user.id);
+          const response = await storageApi.uploadImage(compressedFile);
           setUploadProgress(prev => prev + (100 / images.length));
-          return uploadedImage;
+          return response.data;
         } catch (error) {
           console.error(`Error uploading image ${index}:`, error);
-          // Continue with other uploads even if this one failed
           setUploadProgress(prev => prev + (100 / images.length));
           return null;
         }
@@ -228,10 +179,10 @@ export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListing
       // Provide more specific error messages
       let errorMessage = 'Failed to create listing. Please try again.';
 
-      if (error?.message?.includes('row-level security policy')) {
-        errorMessage = 'Permission denied. You may not have access to upload files.';
-      } else if (error?.message?.includes('bucket')) {
-        errorMessage = 'Storage bucket not found. Please contact support.';
+      if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
 
       toast({

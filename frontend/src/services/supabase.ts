@@ -22,15 +22,24 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const STORAGE_BUCKET = 'listing-images';
 
 /**
- * Test connection to Supabase
+ * Test connection to Supabase Storage
  * @returns {Promise<{success: boolean, message?: string, error?: string}>}
  */
 export const testSupabaseConnection = async (): Promise<{success: boolean, message?: string, error?: string}> => {
   try {
-    // Attempt to fetch the Supabase version which should be accessible with any key
-    const { error } = await supabase.from('_availability').select('*').limit(1);
+    // Test by listing the storage bucket (safe operation that doesn't require a table)
+    const { data, error } = await supabase.storage.from(STORAGE_BUCKET).list('', { limit: 1 });
 
     if (error) {
+      // If bucket doesn't exist, provide helpful error
+      if (error.message.toLowerCase().includes('not found') || error.message.toLowerCase().includes('bucket')) {
+        console.error('Supabase storage bucket test failed:', error);
+        return {
+          success: false,
+          error: `Storage bucket "${STORAGE_BUCKET}" not found. Please create it in the Supabase dashboard.`
+        };
+      }
+
       console.error('Supabase connection test failed:', error);
       return {
         success: false,
@@ -40,13 +49,13 @@ export const testSupabaseConnection = async (): Promise<{success: boolean, messa
 
     return {
       success: true,
-      message: 'Successfully connected to Supabase!'
+      message: 'Successfully connected to Supabase Storage!'
     };
   } catch (err: any) {
     console.error('Error testing Supabase connection:', err);
     return {
       success: false,
-      error: err.message
+      error: err.message || 'Unknown error occurred'
     };
   }
 };
