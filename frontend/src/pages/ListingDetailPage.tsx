@@ -41,10 +41,10 @@ export default function ListingDetailPage() {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
+      currency: 'INR',
+      minimumFractionDigits: 0,
     }).format(price);
   };
 
@@ -335,9 +335,24 @@ export default function ListingDetailPage() {
               )}
               <div className="ml-3">
                 <div className="font-medium">{listing.seller.name}</div>
+                {listing.seller.year && (
+                  <div className="text-sm text-gray-600">Year {listing.seller.year}</div>
+                )}
                 {listing.seller.collegeName && (
                   <div className="text-sm text-gray-500">{listing.seller.collegeName}</div>
                 )}
+                <div className="flex items-center gap-2 mt-1">
+                  {listing.seller.registrationNo && (
+                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                      {listing.seller.registrationNo}
+                    </span>
+                  )}
+                  {listing.seller.hostel && (
+                    <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">
+                      {listing.seller.hostel}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -19,6 +19,8 @@ export interface SellerInfo {
   avatarUrl?: string;
   year?: number;
   collegeName?: string;
+  registrationNo?: string;
+  hostel?: 'MH1' | 'MH2' | 'LH1' | 'LH2';
 }
 
 export interface UserInfo {
