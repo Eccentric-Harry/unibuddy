@@ -21,10 +21,10 @@ export function ListingCard({ listing, onExpressInterest, onMessageSeller }: Lis
     : 'https://placehold.co/300x200/e2e8f0/1e293b?text=No+Image';
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
+      currency: 'INR',
+      minimumFractionDigits: 0,
     }).format(price);
   };
 

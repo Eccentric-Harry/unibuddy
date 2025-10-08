@@ -5,7 +5,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-1',
     title: 'MacBook Pro 13" 2020',
     description: 'Gently used MacBook Pro in excellent condition. Comes with original charger and case. Perfect for students!',
-    price: 899.99,
+    price: 74699,
     category: 'Electronics',
     images: [
       {
@@ -20,7 +20,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Sarah Johnson',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
       year: 3,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2022001',
+      hostel: 'LH1'
     },
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
@@ -29,7 +31,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-2',
     title: 'Calculus Textbook - 10th Edition',
     description: 'Like new condition. No highlighting or notes. Great for MATH 101 and 102.',
-    price: 45.00,
+    price: 3735,
     category: 'Books',
     images: [
       {
@@ -44,7 +46,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Mike Chen',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike',
       year: 2,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2023045',
+      hostel: 'MH1'
     },
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
@@ -53,7 +57,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-3',
     title: 'Mini Fridge - Perfect for Dorms',
     description: 'Compact refrigerator, barely used. Great for dorm rooms. Energy efficient and quiet.',
-    price: 75.00,
+    price: 6225,
     category: 'Furniture',
     images: [
       {
@@ -68,7 +72,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Emily Rodriguez',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily',
       year: 4,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2021089',
+      hostel: 'LH2'
     },
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
@@ -77,7 +83,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-4',
     title: 'Mountain Bike - 21 Speed',
     description: 'Excellent condition mountain bike. Regular maintenance done. Perfect for campus commuting.',
-    price: 180.00,
+    price: 14940,
     category: 'Sports',
     images: [
       {
@@ -92,7 +98,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Alex Thompson',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
       year: 2,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2023112',
+      hostel: 'MH2'
     },
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
@@ -101,11 +109,11 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-5',
     title: 'iPhone 12 - 128GB Blue',
     description: 'Unlocked iPhone in great condition. Battery health at 89%. Includes case and screen protector.',
-    price: 450.00,
+    price: 37350,
     category: 'Electronics',
     images: [
       {
-        url: 'https://unsplash.com/photos/white-iphone-4s-held-by-person-4YmSIWff6aw',
+        url: 'https://images.unsplash.com/photo-1605574931378-0be0786247c0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
         path: 'dummy/iphone.jpg',
         alt: 'iPhone 12'
       }
@@ -116,7 +124,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Jessica Lee',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jessica',
       year: 3,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2022156',
+      hostel: 'LH1'
     },
     createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
@@ -125,7 +135,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-6',
     title: 'Desk Lamp - LED with USB Port',
     description: 'Modern LED desk lamp with adjustable brightness. Built-in USB charging port. Perfect for studying.',
-    price: 25.00,
+    price: 2075,
     category: 'Furniture',
     images: [
       {
@@ -140,7 +150,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'David Park',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
       year: 1,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2024203',
+      hostel: 'MH1'
     },
     createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
@@ -149,7 +161,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-7',
     title: 'Nintendo Switch with Games',
     description: 'Console in perfect working condition. Includes 5 popular games and carrying case.',
-    price: 280.00,
+    price: 23240,
     category: 'Electronics',
     images: [
       {
@@ -164,7 +176,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Rachel Green',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rachel',
       year: 2,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2023078',
+      hostel: 'LH2'
     },
     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
@@ -173,7 +187,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-8',
     title: 'Wireless Headphones - Sony',
     description: 'Noise cancelling wireless headphones. Excellent sound quality. Barely used, includes all accessories.',
-    price: 120.00,
+    price: 9960,
     category: 'Electronics',
     images: [
       {
@@ -188,7 +202,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Tom Wilson',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tom',
       year: 3,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2022234',
+      hostel: 'MH2'
     },
     createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString()
@@ -197,7 +213,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-9',
     title: 'Coffee Maker - Keurig K-Mini',
     description: 'Compact single-serve coffee maker. Perfect for dorm rooms. Clean and works great!',
-    price: 40.00,
+    price: 3320,
     category: 'Appliances',
     images: [
       {
@@ -212,7 +228,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Olivia Martinez',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia',
       year: 4,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2021145',
+      hostel: 'LH1'
     },
     createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString()
@@ -221,7 +239,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-10',
     title: 'Yoga Mat with Carrying Bag',
     description: 'High-quality yoga mat with extra cushioning. Includes carrying bag and strap. Like new!',
-    price: 20.00,
+    price: 1660,
     category: 'Sports',
     images: [
       {
@@ -236,7 +254,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Chris Anderson',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chris',
       year: 1,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2024167',
+      hostel: 'MH1'
     },
     createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
@@ -245,7 +265,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-11',
     title: 'Study Desk - Wood Finish',
     description: 'Sturdy desk with drawer. Great for studying. Easy to assemble. Moving sale!',
-    price: 60.00,
+    price: 4980,
     category: 'Furniture',
     images: [
       {
@@ -260,7 +280,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Amy Zhang',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amy',
       year: 4,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2021098',
+      hostel: 'LH2'
     },
     createdAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString()
@@ -269,7 +291,7 @@ export const dummyListings: ListingResponse[] = [
     id: 'dummy-12',
     title: 'Skateboard - Complete Setup',
     description: 'Professional quality skateboard. Barely used. Great for beginners and experienced riders.',
-    price: 85.00,
+    price: 7055,
     category: 'Sports',
     images: [
       {
@@ -284,7 +306,9 @@ export const dummyListings: ListingResponse[] = [
       name: 'Jake Brown',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jake',
       year: 2,
-      collegeName: 'Sample University'
+      collegeName: 'Sample University',
+      registrationNo: 'REG2023189',
+      hostel: 'MH2'
     },
     createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString()
