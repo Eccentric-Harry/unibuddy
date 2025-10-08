@@ -137,11 +137,9 @@ export const marketplaceApi = {
   getListing: (id: string): Promise<AxiosResponse<ListingResponse>> =>
     api.get(`/listings/${id}`),
   
-  createListing: (data: FormData): Promise<AxiosResponse<ListingResponse>> =>
-    api.post('/listings', data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  
+  createListing: (data: ListingCreateRequest): Promise<AxiosResponse<ListingResponse>> =>
+    api.post('/listings', data),
+
   reportListing: (id: string, reason?: string): Promise<AxiosResponse<void>> =>
     api.post(`/listings/${id}/report`, { reason }),
 };
@@ -200,6 +198,32 @@ export const updateListingStatus = (listingId: string, request: StatusUpdateRequ
 
 export const reportListing = (listingId: string, reason?: string): Promise<AxiosResponse<{ message: string }>> => {
   return api.post(`/listings/${listingId}/report`, { reason });
+};
+
+// Storage API calls
+export const storageApi = {
+  uploadImage: (file: File): Promise<AxiosResponse<{ url: string; path: string; alt: string }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/storage/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  uploadMultipleImages: (files: File[]): Promise<AxiosResponse<{
+    uploaded: { url: string; path: string; alt: string }[];
+    errors: string[];
+  }>> => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    return api.post('/storage/upload-multiple', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  deleteImage: (path: string): Promise<AxiosResponse<{ success: boolean; message: string }>> => {
+    return api.delete('/storage/delete', { params: { path } });
+  },
 };
 
 export default api;
