@@ -1,18 +1,24 @@
 import axios, { type AxiosResponse } from 'axios';
-import type { 
-  AuthResponse, 
-  LoginRequest, 
-  RegisterRequest, 
+import type {
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
   User,
   College,
   Message,
-  Listing,
-  Job,
-  TutorProfile,
   Conversation,
   GlobalChat,
   GlobalMessage,
 } from '../types';
+
+import type {
+  ListingCreateRequest,
+  ListingResponse,
+  ListingFilters,
+  ExpressInterestRequest,
+  StatusUpdateRequest,
+  PaginatedResponse
+} from '../types/marketplace';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -125,17 +131,15 @@ export const marketplaceApi = {
     size?: number;
     sort?: string;
     direction?: 'ASC' | 'DESC';
-  }): Promise<AxiosResponse<{ content: Listing[]; totalPages: number; totalElements: number }>> =>
+  }): Promise<AxiosResponse<{ content: ListingResponse[]; totalPages: number; totalElements: number }>> =>
     api.get('/listings', { params: filters }),
   
-  getListing: (id: string): Promise<AxiosResponse<Listing>> =>
+  getListing: (id: string): Promise<AxiosResponse<ListingResponse>> =>
     api.get(`/listings/${id}`),
   
-  createListing: (data: FormData): Promise<AxiosResponse<Listing>> =>
-    api.post('/listings', data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  
+  createListing: (data: ListingCreateRequest): Promise<AxiosResponse<ListingResponse>> =>
+    api.post('/listings', data),
+
   reportListing: (id: string, reason?: string): Promise<AxiosResponse<void>> =>
     api.post(`/listings/${id}/report`, { reason }),
 };
@@ -171,51 +175,55 @@ export const globalChatApi = {
     }),
 };
 
-// Jobs API calls
-export const jobsApi = {
-  getJobs: (params?: {
-    search?: string;
-    tags?: string[];
-    page?: number;
-    size?: number;
-  }): Promise<AxiosResponse<{ content: Job[]; totalPages: number }>> =>
-    api.get('/jobs', { params }),
-  
-  getJob: (id: string): Promise<AxiosResponse<Job>> =>
-    api.get(`/jobs/${id}`),
-  
-  createJob: (data: Omit<Job, 'id' | 'posterId' | 'createdAt'>): Promise<AxiosResponse<Job>> =>
-    api.post('/jobs', data),
-  
-  updateJob: (id: string, data: Partial<Job>): Promise<AxiosResponse<Job>> =>
-    api.patch(`/jobs/${id}`, data),
-  
-  deleteJob: (id: string): Promise<AxiosResponse<void>> =>
-    api.delete(`/jobs/${id}`),
+// Individual function exports for backward compatibility
+export const createListing = (listing: ListingCreateRequest): Promise<AxiosResponse<ListingResponse>> => {
+  return api.post('/listings', listing);
 };
 
-// Tutoring API calls
-export const tutoringApi = {
-  getTutors: (params?: {
-    subject?: string;
-    maxRate?: number;
-    rating?: number;
-    page?: number;
-    size?: number;
-  }): Promise<AxiosResponse<{ content: TutorProfile[]; totalPages: number }>> =>
-    api.get('/tutors', { params }),
-  
-  getTutor: (id: string): Promise<AxiosResponse<TutorProfile>> =>
-    api.get(`/tutors/${id}`),
-  
-  createTutorProfile: (data: Omit<TutorProfile, 'id' | 'userId' | 'createdAt' | 'rating'>): Promise<AxiosResponse<TutorProfile>> =>
-    api.post('/tutors', data),
-  
-  updateTutorProfile: (id: string, data: Partial<TutorProfile>): Promise<AxiosResponse<TutorProfile>> =>
-    api.patch(`/tutors/${id}`, data),
-  
-  requestSession: (tutorId: string, data: { subject: string; preferredTime: string; message?: string }): Promise<AxiosResponse<void>> =>
-    api.post(`/tutors/${tutorId}/requests`, data),
+export const getListings = (filters?: ListingFilters): Promise<AxiosResponse<PaginatedResponse<ListingResponse>>> => {
+  return api.get('/listings', { params: filters });
+};
+
+export const getListingById = (id: string): Promise<AxiosResponse<ListingResponse>> => {
+  return api.get(`/listings/${id}`);
+};
+
+export const expressInterest = (listingId: string, request?: ExpressInterestRequest): Promise<AxiosResponse<{ conversationId: string; message: string }>> => {
+  return api.post(`/listings/${listingId}/express-interest`, request || {});
+};
+
+export const updateListingStatus = (listingId: string, request: StatusUpdateRequest): Promise<AxiosResponse<ListingResponse>> => {
+  return api.patch(`/listings/${listingId}/status`, request);
+};
+
+export const reportListing = (listingId: string, reason?: string): Promise<AxiosResponse<{ message: string }>> => {
+  return api.post(`/listings/${listingId}/report`, { reason });
+};
+
+// Storage API calls
+export const storageApi = {
+  uploadImage: (file: File): Promise<AxiosResponse<{ url: string; path: string; alt: string }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/storage/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  uploadMultipleImages: (files: File[]): Promise<AxiosResponse<{
+    uploaded: { url: string; path: string; alt: string }[];
+    errors: string[];
+  }>> => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    return api.post('/storage/upload-multiple', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  deleteImage: (path: string): Promise<AxiosResponse<{ success: boolean; message: string }>> => {
+    return api.delete('/storage/delete', { params: { path } });
+  },
 };
 
 export default api;

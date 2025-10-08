@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MoreVertical, Phone, Video } from 'lucide-react';
 import { conversationApi } from '../../services/api';
-import { MessageList } from './MessageList';
+import MessageList from './MessageList';
 import { MessageComposer } from './MessageComposer';
 import { Button } from '../ui/button';
 import type { Message } from '../../types';
@@ -16,7 +16,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { data: messagesData, isLoading: messagesLoading } = useQuery({
+  const { data: messagesData } = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: () => conversationApi.getConversationMessages(conversationId),
     enabled: !!conversationId,
@@ -107,7 +107,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        <MessageList messages={allMessages} loading={messagesLoading} />
+        <MessageList messages={allMessages} />
         <div ref={messagesEndRef} />
       </div>
 

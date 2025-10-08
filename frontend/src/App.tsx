@@ -6,8 +6,10 @@ import { RegisterForm } from './components/auth/RegisterForm';
 import { OtpVerificationForm } from './components/auth/OtpVerificationForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
-import { MarketplacePage } from './pages/MarketplacePage';
+import MarketplacePage from './pages/MarketplacePage';
+import ListingDetailPage from './pages/ListingDetailPage';
 import ChatPage from './pages/ChatPage';
+import JobsPage from './pages/JobsPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -52,6 +54,14 @@ function App() {
               }
             />
             <Route
+              path="/jobs"
+              element={
+                <ProtectedRoute>
+                  <JobsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/chat"
               element={
                 <ProtectedRoute>
@@ -59,7 +69,15 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+            <Route
+              path="/marketplace/:id"
+              element={
+                <ProtectedRoute>
+                  <ListingDetailPage />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Default redirect */}
             <Route 
               path="/" 

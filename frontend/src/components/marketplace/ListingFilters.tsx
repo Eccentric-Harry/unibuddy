@@ -1,135 +1,155 @@
-import { useState } from 'react';
-import { Button } from '../ui/button';
+import { useState, useEffect } from 'react';
 import { Input } from '../ui/input';
+import { Button } from '../ui/button';
 import { Label } from '../ui/label';
-import type { ListingFilters as ListingFiltersType } from '../../types';
+import type { ListingFilters as ListingFiltersType } from '../../types/marketplace';
 
 interface ListingFiltersProps {
-  filters: ListingFiltersType;
-  onFiltersChange: (filters: ListingFiltersType) => void;
+  onFilterChange: (filters: ListingFiltersType) => void;
+  initialFilters?: ListingFiltersType;
 }
 
 const CATEGORIES = [
-  'Electronics',
+  'All Categories',
   'Books',
-  'Furniture',
+  'Electronics',
   'Clothing',
-  'Sports',
-  'Kitchen',
-  'Other'
+  'Furniture',
+  'Tickets',
+  'Services',
+  'Miscellaneous'
 ];
 
-export function ListingFilters({ filters, onFiltersChange }: ListingFiltersProps) {
-  const [localFilters, setLocalFilters] = useState(filters);
+const ListingFilters = ({ onFilterChange, initialFilters }: ListingFiltersProps) => {
+  const [query, setQuery] = useState(initialFilters?.query || '');
+  const [category, setCategory] = useState(initialFilters?.category || '');
+  const [minPrice, setMinPrice] = useState<string>(
+    initialFilters?.minPrice ? initialFilters.minPrice.toString() : ''
+  );
+  const [maxPrice, setMaxPrice] = useState<string>(
+    initialFilters?.maxPrice ? initialFilters.maxPrice.toString() : ''
+  );
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleApplyFilters = () => {
-    onFiltersChange(localFilters);
-  };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleResetFilters = () => {
-    const resetFilters: ListingFiltersType = {
-      page: 0,
-      size: 20,
-      sort: 'createdAt',
-      direction: 'DESC'
+    const filters: ListingFiltersType = {
+      query: query || undefined,
+      category: category === 'All Categories' ? undefined : category.toLowerCase() || undefined,
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
     };
-    setLocalFilters(resetFilters);
-    onFiltersChange(resetFilters);
+
+    onFilterChange(filters);
   };
+
+  const handleReset = () => {
+    setQuery('');
+    setCategory('');
+    setMinPrice('');
+    setMaxPrice('');
+
+    onFilterChange({});
+  };
+
+  useEffect(() => {
+    // Apply filters on initial render if provided
+    if (initialFilters && Object.keys(initialFilters).length > 0) {
+      onFilterChange(initialFilters);
+    }
+  }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Category Filter */}
-        <div>
-          <Label htmlFor="category" className="text-sm font-medium text-gray-700 mb-2 block">
-            Category
-          </Label>
-          <select
-            id="category"
-            value={localFilters.category || ''}
-            onChange={(e) => setLocalFilters({ ...localFilters, category: e.target.value || undefined })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">All Categories</option>
-            {CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
+    <div className="bg-white rounded-lg shadow p-4 mb-6">
+      <form onSubmit={handleSubmit}>
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1">
+            <Label htmlFor="search">Search</Label>
+            <Input
+              id="search"
+              placeholder="Search listings..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div className="w-full md:w-1/4">
+            <Label htmlFor="category">Category</Label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm h-10"
+            >
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat === 'All Categories' ? '' : cat.toLowerCase()}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="submit">
+              Apply Filters
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              {isExpanded ? 'Less' : 'More'}
+            </Button>
+          </div>
         </div>
 
-        {/* Price Range */}
-        <div>
-          <Label htmlFor="minPrice" className="text-sm font-medium text-gray-700 mb-2 block">
-            Min Price
-          </Label>
-          <Input
-            id="minPrice"
-            type="number"
-            placeholder="0"
-            value={localFilters.minPrice || ''}
-            onChange={(e) => setLocalFilters({ 
-              ...localFilters, 
-              minPrice: e.target.value ? Number(e.target.value) : undefined 
-            })}
-          />
-        </div>
+        {isExpanded && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="minPrice">Min Price</Label>
+              <Input
+                id="minPrice"
+                type="number"
+                placeholder="Min price"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                min="0"
+                step="0.01"
+                className="mt-1"
+              />
+            </div>
 
-        <div>
-          <Label htmlFor="maxPrice" className="text-sm font-medium text-gray-700 mb-2 block">
-            Max Price
-          </Label>
-          <Input
-            id="maxPrice"
-            type="number"
-            placeholder="1000"
-            value={localFilters.maxPrice || ''}
-            onChange={(e) => setLocalFilters({ 
-              ...localFilters, 
-              maxPrice: e.target.value ? Number(e.target.value) : undefined 
-            })}
-          />
-        </div>
+            <div>
+              <Label htmlFor="maxPrice">Max Price</Label>
+              <Input
+                id="maxPrice"
+                type="number"
+                placeholder="Max price"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                min="0"
+                step="0.01"
+                className="mt-1"
+              />
+            </div>
 
-        {/* Sort */}
-        <div>
-          <Label htmlFor="sort" className="text-sm font-medium text-gray-700 mb-2 block">
-            Sort By
-          </Label>
-          <select
-            id="sort"
-            value={`${localFilters.sort}_${localFilters.direction}`}
-            onChange={(e) => {
-              const [sort, direction] = e.target.value.split('_');
-              setLocalFilters({ 
-                ...localFilters, 
-                sort, 
-                direction: direction as 'ASC' | 'DESC' 
-              });
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="createdAt_DESC">Newest First</option>
-            <option value="createdAt_ASC">Oldest First</option>
-            <option value="price_ASC">Price: Low to High</option>
-            <option value="price_DESC">Price: High to Low</option>
-            <option value="title_ASC">Title: A to Z</option>
-            <option value="title_DESC">Title: Z to A</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center space-x-3">
-        <Button onClick={handleApplyFilters}>
-          Apply Filters
-        </Button>
-        <Button variant="outline" onClick={handleResetFilters}>
-          Reset
-        </Button>
-      </div>
+            <div className="md:col-span-2 flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleReset}
+                className="text-gray-500"
+              >
+                Reset All Filters
+              </Button>
+            </div>
+          </div>
+        )}
+      </form>
     </div>
   );
-}
+};
+
+export { ListingFilters };
