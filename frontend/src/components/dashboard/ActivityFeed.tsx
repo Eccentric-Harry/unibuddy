@@ -63,9 +63,9 @@ export function ActivityFeed() {
       transition={{ delay: 0.6, duration: 0.6 }}
       className="mb-8"
     >
-      <h2 className="text-3xl font-bold text-gray-900 mb-6">Campus Activity</h2>
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="divide-y divide-gray-100">
+      <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-6">Campus Activity</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none overflow-hidden theme-transition">
+        <div className="divide-y divide-slate-100 dark:divide-slate-700">
           {activities.map((activity, index) => {
             const Icon = activity.icon;
             return (
@@ -74,21 +74,21 @@ export function ActivityFeed() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 * index, duration: 0.3 }}
-                whileHover={{ backgroundColor: '#F9FAFB', x: 4 }}
-                className="p-4 transition-all cursor-pointer"
+                whileHover={{ backgroundColor: 'var(--hover-bg)', x: 4 }}
+                className="p-4 transition-all cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50"
               >
                 <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-xl ${activity.bgColor} flex-shrink-0`}>
-                    <Icon className={activity.color} size={20} />
+                  <div className={`p-3 rounded-xl ${activity.bgColor} dark:bg-opacity-20 flex-shrink-0`}>
+                    <Icon className={`${activity.color} dark:opacity-90`} size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-semibold text-gray-900">{activity.title}</h3>
-                      <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">{activity.title}</h3>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 ml-2 flex-shrink-0">
                         {activity.time}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">{activity.description}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{activity.description}</p>
                   </div>
                 </div>
               </motion.div>
@@ -99,4 +99,3 @@ export function ActivityFeed() {
     </motion.section>
   );
 }
-
