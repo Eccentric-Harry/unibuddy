@@ -1,22 +1,27 @@
 package com.unibuddy.collegeBuddy.service;
 
-import com.unibuddy.collegeBuddy.dto.listing.CreateListingRequest;
-import com.unibuddy.collegeBuddy.dto.listing.ListingFilters;
-import com.unibuddy.collegeBuddy.dto.listing.ListingResponse;
+import com.unibuddy.collegeBuddy.dto.listing.*;
+import com.unibuddy.collegeBuddy.entity.Conversation;
 import com.unibuddy.collegeBuddy.entity.Listing;
+import com.unibuddy.collegeBuddy.entity.Message;
 import com.unibuddy.collegeBuddy.entity.User;
+import com.unibuddy.collegeBuddy.repository.ConversationRepository;
 import com.unibuddy.collegeBuddy.repository.ListingRepository;
+import com.unibuddy.collegeBuddy.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,30 +29,41 @@ import java.util.UUID;
 public class ListingService {
 
     private final ListingRepository listingRepository;
+    private final ConversationRepository conversationRepository;
+    private final MessageRepository messageRepository;
+    private final SimpMessagingTemplate messagingTemplate;
     private final FileStorageService fileStorageService;
     private final ProfanityFilterService profanityFilterService;
 
     @Transactional
-    public ListingResponse createListing(CreateListingRequest request, User seller) {
+    public ListingResponse createListing(ListingCreateRequest request, User seller) {
         // Validate user is verified
-        if (!seller.getEmailVerified()) {
-            throw new IllegalStateException("Only verified users can create listings");
+        if (!seller.getEmailVerified() || seller.getCollege() == null) {
+            throw new IllegalStateException("Only verified college users can create listings");
+        }
+
+        // Check rate limit
+        int activeListingCount = listingRepository.countBySeller_IdAndStatusIn(
+            seller.getId(),
+            List.of(Listing.Status.ACTIVE, Listing.Status.RESERVED)
+        );
+        if (activeListingCount >= 10) {
+            throw new IllegalStateException("You can have a maximum of 10 active listings");
         }
 
         // Validate content
         profanityFilterService.validateContent(request.getTitle());
         profanityFilterService.validateContent(request.getDescription());
 
-        // Store images
-        List<String> imageUrls = fileStorageService.storeFiles(request.getImages());
-
-        // Create listing
+        // Create listing with pre-uploaded images
         Listing listing = new Listing();
         listing.setTitle(request.getTitle());
         listing.setDescription(request.getDescription());
         listing.setPrice(request.getPrice());
         listing.setCategory(request.getCategory());
-        listing.setImages(imageUrls);
+        listing.setImages(request.getImages().stream()
+                .map(img -> new Listing.ListingImage(img.getUrl(), img.getPath(), img.getAlt()))
+                .collect(Collectors.toList()));
         listing.setSeller(seller);
 
         listing = listingRepository.save(listing);
@@ -57,12 +73,13 @@ public class ListingService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ListingResponse> getListings(ListingFilters filters) {
+    public Page<ListingResponse> getListings(ListingFiltersDto filters) {
         // Map field names from entity to database columns for native queries
-        String sortField = mapSortField(filters.getSort());
-        
+        String sortField = mapSortField(filters.getSort().split(",")[0]);
+        String direction = filters.getSort().split(",")[1];
+
         Sort sort = Sort.by(
-            Sort.Direction.fromString(filters.getDirection()),
+            Sort.Direction.fromString(direction),
             sortField
         );
         
@@ -72,7 +89,7 @@ public class ListingService {
             filters.getCategory(),
             filters.getMinPrice(),
             filters.getMaxPrice(),
-            filters.getQ(),
+            filters.getQuery(),
             pageable
         );
 
@@ -93,9 +110,114 @@ public class ListingService {
     @Transactional(readOnly = true)
     public ListingResponse getListingById(UUID id) {
         Listing listing = listingRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Listing not found"));
-        
+            .orElseThrow(() -> new IllegalArgumentException("Listing not found"));
+
         return mapToResponse(listing);
+    }
+
+    @Transactional
+    public Conversation expressInterest(UUID listingId, UUID buyerId, ExpressInterestRequest request) {
+        User buyer = getUserById(buyerId);
+
+        // Validate user is verified
+        if (!buyer.getEmailVerified() || buyer.getCollege() == null) {
+            throw new IllegalStateException("Only verified college users can express interest");
+        }
+
+        // Get listing
+        Listing listing = listingRepository.findById(listingId)
+            .orElseThrow(() -> new IllegalArgumentException("Listing not found"));
+
+        // Check if listing is active
+        if (listing.getStatus() != Listing.Status.ACTIVE) {
+            throw new IllegalStateException("This listing is not available");
+        }
+
+        // Check if buyer is not the seller
+        if (listing.getSeller().getId().equals(buyerId)) {
+            throw new IllegalStateException("You cannot express interest in your own listing");
+        }
+
+        // Find existing conversation or create new one
+        Optional<Conversation> existingConversation =
+            conversationRepository.findByListingIdAndBuyerId(listingId, buyerId);
+
+        Conversation conversation;
+        boolean isNewConversation = false;
+
+        if (existingConversation.isPresent()) {
+            conversation = existingConversation.get();
+        } else {
+            conversation = new Conversation();
+            conversation.setListing(listing);
+            conversation.setBuyer(buyer);
+            conversation.setSeller(listing.getSeller());
+            conversation = conversationRepository.save(conversation);
+            isNewConversation = true;
+        }
+
+        // Create message
+        String messageText = request.getMessage();
+        if (messageText == null || messageText.isBlank()) {
+            messageText = "Hi, I'm interested in your listing \"" + listing.getTitle() + "\" — is it still available?";
+        }
+
+        Message message = new Message();
+        message.setConversation(conversation);
+        message.setSender(buyer);
+        message.setMessageText(messageText);
+        message = messageRepository.save(message);
+
+        // Reserve the listing
+        listing.setStatus(Listing.Status.RESERVED);
+        listing.setReservedBy(buyer);
+        listingRepository.save(listing);
+
+        // Notify through WebSocket
+        messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getId(), message);
+
+        return conversation;
+    }
+
+    @Transactional
+    public ListingResponse updateListingStatus(UUID listingId, UUID sellerId, ListingStatusUpdateRequest request) {
+        Listing listing = listingRepository.findById(listingId)
+            .orElseThrow(() -> new IllegalArgumentException("Listing not found"));
+
+        // Verify ownership
+        if (!listing.getSeller().getId().equals(sellerId)) {
+            throw new IllegalStateException("You can only update your own listings");
+        }
+
+        // Update status
+        try {
+            Listing.Status newStatus = Listing.Status.valueOf(request.getStatus().toUpperCase());
+
+            // If changing from RESERVED to ACTIVE, clear reservedBy
+            if (newStatus == Listing.Status.ACTIVE && listing.getStatus() == Listing.Status.RESERVED) {
+                listing.setReservedBy(null);
+            }
+
+            listing.setStatus(newStatus);
+            listing = listingRepository.save(listing);
+
+            return mapToResponse(listing);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid status: " + request.getStatus());
+        }
+    }
+
+    @Transactional
+    public void reportListing(UUID listingId, UUID reporterId, String reason) {
+        // Implementation for reporting a listing (placeholder)
+        log.info("Listing {} reported by user {} for reason: {}", listingId, reporterId, reason);
+    }
+
+    private User getUserById(UUID userId) {
+        // Placeholder method - replace with actual user service call
+        User user = new User();
+        user.setId(userId);
+        return user;
     }
 
     private ListingResponse mapToResponse(Listing listing) {
@@ -120,6 +242,15 @@ public class ListingService {
             sellerInfo.setCollegeName(listing.getSeller().getCollege().getName());
         }
         response.setSeller(sellerInfo);
+
+        // Map reservedBy info if applicable
+        if (listing.getReservedBy() != null) {
+            ListingResponse.UserInfo reservedByInfo = new ListingResponse.UserInfo();
+            reservedByInfo.setId(listing.getReservedBy().getId());
+            reservedByInfo.setName(listing.getReservedBy().getName());
+            reservedByInfo.setAvatarUrl(listing.getReservedBy().getAvatarUrl());
+            response.setReservedBy(reservedByInfo);
+        }
 
         return response;
     }

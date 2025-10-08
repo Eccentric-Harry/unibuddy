@@ -1,5 +1,6 @@
 package com.unibuddy.collegeBuddy.dto.listing;
 
+import com.unibuddy.collegeBuddy.entity.Listing.ListingImage;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -14,9 +15,10 @@ public class ListingResponse {
     private String description;
     private BigDecimal price;
     private String category;
-    private List<String> images;
+    private List<ListingImage> images;
     private String status;
     private SellerInfo seller;
+    private UserInfo reservedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -27,5 +29,12 @@ public class ListingResponse {
         private String avatarUrl;
         private Short year;
         private String collegeName;
+    }
+
+    @Data
+    public static class UserInfo {
+        private UUID id;
+        private String name;
+        private String avatarUrl;
     }
 }

@@ -147,7 +147,8 @@ public class ConversationService {
         listingInfo.setId(conversation.getListing().getId());
         listingInfo.setTitle(conversation.getListing().getTitle());
         if (conversation.getListing().getImages() != null && !conversation.getListing().getImages().isEmpty()) {
-            listingInfo.setFirstImage(conversation.getListing().getImages().get(0));
+            // Extract URL from ListingImage object instead of using it directly
+            listingInfo.setFirstImageUrl(conversation.getListing().getImages().get(0).getUrl());
         }
         response.setListing(listingInfo);
 
