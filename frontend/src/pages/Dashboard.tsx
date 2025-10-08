@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { useAuthStore } from '../store/authStore';
 import { generateAvatar } from '../utils';
 import { CreateListingModal } from '../components/marketplace/CreateListingModal';
+import { ThemeToggle } from '../components/ThemeToggle';
 import {
   Hero,
   StatsBar,
@@ -37,31 +38,32 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       {/* Modern Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 px-4 md:px-6 py-3">
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3 md:space-x-4">
             <img
               src={generateAvatar(user.email)}
               alt="Profile"
-              className="w-10 h-10 rounded-full ring-2 ring-indigo-100"
+              className="w-10 h-10 rounded-full ring-2 ring-indigo-100 dark:ring-indigo-900"
             />
             <div className="hidden sm:block">
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {user.name}
               </h1>
-              <p className="text-xs text-gray-500">College ID: {user.collegeId}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">College ID: {user.collegeId}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2 md:space-x-4">
+            <ThemeToggle variant="compact" />
             <Button variant="ghost" size="sm" className="relative">
               <Bell className="h-5 w-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -105,14 +107,14 @@ export default function Dashboard() {
         <QuickActions />
 
         {/* Footer */}
-        <footer className="mt-16 pt-8 border-t border-gray-200">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
+        <footer className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-400">
             <p>© 2025 UniBuddy. Built for students, by students.</p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-indigo-600 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-indigo-600 transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-indigo-600 transition-colors">Help Center</a>
-              <a href="#" className="hover:text-indigo-600 transition-colors">Report Issue</a>
+              <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Help Center</a>
+              <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Report Issue</a>
             </div>
           </div>
         </footer>

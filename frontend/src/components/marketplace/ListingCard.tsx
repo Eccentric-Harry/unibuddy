@@ -31,13 +31,13 @@ export function ListingCard({ listing, onExpressInterest, onMessageSeller }: Lis
   const formatStatus = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return { text: 'Available', color: 'bg-green-100 text-green-800' };
+        return { text: 'Available', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' };
       case 'RESERVED':
-        return { text: 'Reserved', color: 'bg-yellow-100 text-yellow-800' };
+        return { text: 'Reserved', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' };
       case 'SOLD':
-        return { text: 'Sold', color: 'bg-red-100 text-red-800' };
+        return { text: 'Sold', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' };
       default:
-        return { text: 'Inactive', color: 'bg-gray-100 text-gray-800' };
+        return { text: 'Inactive', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' };
     }
   };
 
@@ -87,17 +87,17 @@ export function ListingCard({ listing, onExpressInterest, onMessageSeller }: Lis
         </div>
 
         <CardContent className="p-4">
-          <h3 className="text-lg font-semibold truncate">{listing.title}</h3>
-          <p className="text-xl font-bold text-primary mt-1">{formatPrice(listing.price)}</p>
+          <h3 className="text-lg font-semibold truncate dark:text-gray-100">{listing.title}</h3>
+          <p className="text-xl font-bold text-primary dark:text-violet-400 mt-1">{formatPrice(listing.price)}</p>
           <div className="flex items-center mt-2">
-            <span className="text-xs bg-gray-100 rounded-full px-2 py-1">
+            <span className="text-xs bg-gray-100 dark:bg-slate-800 dark:text-gray-300 rounded-full px-2 py-1">
               {listing.category}
             </span>
-            <span className="text-xs text-gray-500 ml-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
               Posted by {listing.seller.name}
             </span>
           </div>
-          <p className="text-sm text-gray-500 line-clamp-2 mt-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-2">
             {listing.description}
           </p>
         </CardContent>
