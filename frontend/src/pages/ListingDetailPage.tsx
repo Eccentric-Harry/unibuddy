@@ -191,17 +191,17 @@ export default function ListingDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 min-h-screen bg-slate-50 dark:bg-slate-950">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mb-4"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 h-96 bg-gray-200 rounded"></div>
+            <div className="md:col-span-2 h-96 bg-slate-200 dark:bg-slate-700 rounded"></div>
             <div className="space-y-4">
-              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-              <div className="h-24 bg-gray-200 rounded"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
+              <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+              <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+              <div className="h-24 bg-slate-200 dark:bg-slate-700 rounded"></div>
+              <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded"></div>
+              <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded"></div>
             </div>
           </div>
         </div>
@@ -211,10 +211,10 @@ export default function ListingDetailPage() {
 
   if (!listing) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 min-h-screen bg-slate-50 dark:bg-slate-950">
         <div className="text-center py-16">
-          <h2 className="text-2xl font-bold text-gray-700">Listing Not Found</h2>
-          <p className="text-gray-500 mt-2">
+          <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300">Listing Not Found</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">
             The listing you are looking for does not exist or has been removed.
           </p>
           <Button
@@ -229,7 +229,7 @@ export default function ListingDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 min-h-screen bg-slate-50 dark:bg-slate-950">
       <Button
         variant="ghost"
         className="mb-6"
@@ -241,14 +241,15 @@ export default function ListingDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left column - Images */}
         <div className="md:col-span-2 space-y-4">
-          <div className="bg-gray-100 rounded-lg overflow-hidden aspect-video relative">
+          <div className="bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden aspect-video relative theme-transition">
             {listing.images && listing.images.length > 0 ? (
               <>
                 <img
                   src={listing.images[selectedImageIndex].url}
                   alt={listing.images[selectedImageIndex].alt || listing.title}
-                  className="w-full h-full object-contain cursor-pointer"
+                  className="w-full h-full object-contain cursor-pointer dark:opacity-90"
                   onClick={() => handleImageClick(selectedImageIndex)}
+                  loading="lazy"
                 />
 
                 {listing.images.length > 1 && (
@@ -269,190 +270,181 @@ export default function ListingDetailPage() {
                 )}
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                No Images Available
+              <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-500">
+                No images available
               </div>
             )}
           </div>
 
+          {/* Thumbnail grid */}
           {listing.images && listing.images.length > 1 && (
-            <div className="flex overflow-x-auto space-x-2 pb-2">
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
               {listing.images.map((image, index) => (
-                <img
+                <div
                   key={index}
-                  src={image.url}
-                  alt={image.alt || `${listing.title} - Image ${index + 1}`}
-                  className={`h-20 w-20 object-cover rounded cursor-pointer ${
-                    selectedImageIndex === index ? 'border-2 border-primary' : ''
+                  className={`aspect-square rounded-lg overflow-hidden cursor-pointer border-2 theme-transition ${
+                    index === selectedImageIndex
+                      ? 'border-indigo-600 dark:border-indigo-400'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
                   }`}
-                  onClick={() => handleImageClick(index)}
-                />
+                  onClick={() => setSelectedImageIndex(index)}
+                >
+                  <img
+                    src={image.url}
+                    alt={image.alt || `${listing.title} - ${index + 1}`}
+                    className="w-full h-full object-cover dark:opacity-90"
+                    loading="lazy"
+                  />
+                </div>
               ))}
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow p-6 mt-6">
-            <h2 className="text-xl font-bold mb-4">Description</h2>
-            <p className="whitespace-pre-line">{listing.description}</p>
+          {/* Description */}
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none p-6 theme-transition">
+            <h2 className="text-xl font-bold mb-4 text-slate-900 dark:text-slate-100">Description</h2>
+            <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{listing.description}</p>
           </div>
         </div>
 
         {/* Right column - Details and Actions */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-4 ${
-            isActive ? 'bg-green-100 text-green-800' :
-            isReserved ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800'
-          }`}>
-            {isActive ? 'Available' : isReserved ? 'Reserved' : 'Sold'}
-          </div>
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none p-6 theme-transition">
+            <div className="mb-4">
+              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                isActive ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                isReserved ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+              }`}>
+                {listing.status}
+              </span>
+            </div>
 
-          <h1 className="text-2xl font-bold">{listing.title}</h1>
-          <p className="text-3xl font-bold text-primary mt-2">{formatPrice(listing.price)}</p>
+            <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">{listing.title}</h1>
+            <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-4">
+              {formatPrice(listing.price)}
+            </p>
 
-          <div className="flex items-center mt-4">
-            <span className="bg-gray-100 text-gray-700 text-sm rounded-full px-3 py-1">
-              {listing.category}
-            </span>
-            <span className="text-gray-500 text-sm ml-2">
-              Posted: {new Date(listing.createdAt).toLocaleDateString()}
-            </span>
-          </div>
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600 dark:text-slate-400">Category</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{listing.category}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600 dark:text-slate-400">Condition</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{listing.condition}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600 dark:text-slate-400">Posted</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">
+                  {new Date(listing.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
 
-          <div className="border-t border-gray-200 my-6 pt-6">
-            <h3 className="font-medium mb-2">Seller</h3>
-            <div className="flex items-center">
-              {listing.seller.avatarUrl ? (
-                <img
-                  src={listing.seller.avatarUrl}
-                  alt={listing.seller.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                  {listing.seller.name.charAt(0).toUpperCase()}
-                </div>
+            <div className="flex flex-col gap-3">
+              {/* Actions for non-owners */}
+              {!isOwner && (
+                <>
+                  <Button
+                    onClick={handleMessageSeller}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Message Seller
+                  </Button>
+                  <Button
+                    onClick={handleExpressInterest}
+                    className="w-full"
+                    disabled={!isActive}
+                  >
+                    {isActive ? "I'm Interested" : "Not Available"}
+                  </Button>
+                </>
               )}
-              <div className="ml-3">
-                <div className="font-medium">{listing.seller.name}</div>
-                {listing.seller.year && (
-                  <div className="text-sm text-gray-600">Year {listing.seller.year}</div>
-                )}
-                {listing.seller.collegeName && (
-                  <div className="text-sm text-gray-500">{listing.seller.collegeName}</div>
-                )}
-                <div className="flex items-center gap-2 mt-1">
-                  {listing.seller.registrationNo && (
-                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
-                      {listing.seller.registrationNo}
-                    </span>
+
+              {/* Actions for owners */}
+              {isOwner && (
+                <>
+                  {isActive && (
+                    <Button
+                      onClick={() => handleUpdateStatus('SOLD')}
+                      className="w-full"
+                    >
+                      Mark as Sold
+                    </Button>
                   )}
-                  {listing.seller.hostel && (
-                    <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">
-                      {listing.seller.hostel}
-                    </span>
+
+                  {isReserved && (
+                    <Button
+                      onClick={() => handleUpdateStatus('ACTIVE')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Mark as Available
+                    </Button>
                   )}
-                </div>
-              </div>
+
+                  {isReserved && (
+                    <Button
+                      onClick={() => handleUpdateStatus('SOLD')}
+                      className="w-full"
+                    >
+                      Complete Sale
+                    </Button>
+                  )}
+
+                  {isSold && (
+                    <Button
+                      onClick={() => handleUpdateStatus('ACTIVE')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Re-list Item
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
-          {isReserved && listing.reservedBy && (
-            <div className="border-t border-gray-200 my-6 pt-6">
-              <h3 className="font-medium mb-2">Reserved By</h3>
-              <div className="flex items-center">
-                {listing.reservedBy.avatarUrl ? (
-                  <img
-                    src={listing.reservedBy.avatarUrl}
-                    alt={listing.reservedBy.name}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    {listing.reservedBy.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="ml-3">
-                  <div className="font-medium">{listing.reservedBy.name}</div>
-                </div>
+          {/* Seller Info */}
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none p-6 theme-transition">
+            <h2 className="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100">Seller Information</h2>
+            <div className="flex items-center space-x-3 mb-4">
+              <img
+                src={listing.seller.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(listing.seller.name)}`}
+                alt={listing.seller.name}
+                className="w-12 h-12 rounded-full"
+              />
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">{listing.seller.name}</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{listing.seller.email}</p>
               </div>
             </div>
-          )}
 
-          <div className="space-y-3 mt-6">
-            {/* Actions for non-owners */}
-            {!isOwner && (
-              <>
-                <Button
-                  onClick={handleMessageSeller}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Message Seller
-                </Button>
-                <Button
-                  onClick={handleExpressInterest}
-                  className="w-full"
-                  disabled={!isActive}
-                >
-                  {isActive ? "I'm Interested" : "Not Available"}
-                </Button>
-              </>
-            )}
+            <div className="border-t border-slate-200 dark:border-slate-700 py-4">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-slate-600 dark:text-slate-400">Year</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{listing.seller.year}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-slate-600 dark:text-slate-400">College</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{listing.seller.collegeName}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600 dark:text-slate-400">Registration No</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{listing.seller.registrationNo}</span>
+              </div>
+            </div>
 
-            {/* Actions for owners */}
-            {isOwner && (
-              <>
-                {isActive && (
-                  <Button
-                    onClick={() => handleUpdateStatus('SOLD')}
-                    className="w-full"
-                  >
-                    Mark as Sold
-                  </Button>
-                )}
-
-                {isReserved && (
-                  <Button
-                    onClick={() => handleUpdateStatus('ACTIVE')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Mark as Available
-                  </Button>
-                )}
-
-                {isReserved && (
-                  <Button
-                    onClick={() => handleUpdateStatus('SOLD')}
-                    className="w-full"
-                  >
-                    Complete Sale
-                  </Button>
-                )}
-
-                {isSold && (
-                  <Button
-                    onClick={() => handleUpdateStatus('ACTIVE')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Re-list Item
-                  </Button>
-                )}
-              </>
-            )}
-
-            {/* Report button for non-owners */}
-            {!isOwner && (
-              <Button
-                onClick={() => setReportModalOpen(true)}
-                variant="ghost"
-                className="text-red-500 hover:text-red-700 hover:bg-red-50 w-full"
-              >
-                Report Listing
-              </Button>
-            )}
+            <div className="flex flex-col gap-2 mt-4">
+              {listing.seller.hostel && (
+                <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">
+                  {listing.seller.hostel}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

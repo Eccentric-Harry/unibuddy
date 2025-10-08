@@ -96,15 +96,15 @@ export default function JobsPage() {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Briefcase className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">Job Board</h1>
+            <Briefcase className="w-8 h-8 text-primary dark:text-indigo-400" />
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Job Board</h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-slate-600 dark:text-slate-400">
             Discover internships, part-time, and full-time opportunities in Computer Science
           </p>
         </div>
@@ -112,27 +112,27 @@ export default function JobsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-primary">{dummyJobs.length}</div>
-          <div className="text-sm text-gray-600">Total Jobs</div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none p-4 theme-transition">
+          <div className="text-2xl font-bold text-primary dark:text-indigo-400">{dummyJobs.length}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Total Jobs</div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-green-600">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none p-4 theme-transition">
+          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
             {dummyJobs.filter(j => j.jobType === 'Internship').length}
           </div>
-          <div className="text-sm text-gray-600">Internships</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Internships</div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-blue-600">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none p-4 theme-transition">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             {dummyJobs.filter(j => j.locationType === 'Remote').length}
           </div>
-          <div className="text-sm text-gray-600">Remote Jobs</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Remote Jobs</div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-purple-600">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none p-4 theme-transition">
+          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
             {dummyJobs.filter(j => j.jobType === 'Part-time').length}
           </div>
-          <div className="text-sm text-gray-600">Part-time</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Part-time</div>
         </div>
       </div>
 
