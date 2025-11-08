@@ -25,11 +25,11 @@ public class StorageController {
     private final StorageService storageService;
 
     /**
-     * Upload a single image file
+     * Upload a single image file using flat storage structure
      *
      * @param file The image file to upload
      * @param user The authenticated user
-     * @return The uploaded file metadata
+     * @return The uploaded file metadata compatible with frontend expectations
      */
     @PostMapping("/upload")
     public ResponseEntity<?> uploadImage(
@@ -38,7 +38,14 @@ public class StorageController {
 
         try {
             StorageService.UploadedFileDto uploadedFile = storageService.uploadFile(file, user.getId());
-            return ResponseEntity.ok(uploadedFile);
+
+            // Return response in format expected by frontend
+            Map<String, String> response = new HashMap<>();
+            response.put("url", uploadedFile.url());
+            response.put("path", uploadedFile.path());
+            response.put("alt", uploadedFile.alt());
+
+            return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException e) {
             log.warn("Invalid file upload request: {}", e.getMessage());
@@ -55,7 +62,7 @@ public class StorageController {
     }
 
     /**
-     * Upload multiple image files
+     * Upload multiple image files using flat storage structure
      *
      * @param files Array of image files to upload
      * @param user  The authenticated user
@@ -66,23 +73,22 @@ public class StorageController {
             @RequestParam("files") MultipartFile[] files,
             @AuthenticationPrincipal User user) {
 
-        if (files.length > 5) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Maximum 5 images allowed");
-            return ResponseEntity.badRequest().body(error);
-        }
-
-        List<StorageService.UploadedFileDto> uploadedFiles = new ArrayList<>();
+        List<Map<String, String>> uploadedFiles = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
-        for (int i = 0; i < files.length; i++) {
+        for (MultipartFile file : files) {
             try {
-                StorageService.UploadedFileDto uploadedFile = storageService.uploadFile(files[i], user.getId());
-                uploadedFiles.add(uploadedFile);
+                StorageService.UploadedFileDto uploadedFile = storageService.uploadFile(file, user.getId());
 
-            } catch (Exception e) {
-                log.error("Error uploading file {}", i, e);
-                errors.add(String.format("File %d: %s", i, e.getMessage()));
+                Map<String, String> fileInfo = new HashMap<>();
+                fileInfo.put("url", uploadedFile.url());
+                fileInfo.put("path", uploadedFile.path());
+                fileInfo.put("alt", uploadedFile.alt());
+                uploadedFiles.add(fileInfo);
+
+            } catch (IllegalArgumentException | IOException e) {
+                log.error("Error uploading file: {}", file.getOriginalFilename(), e);
+                errors.add(file.getOriginalFilename() + ": " + e.getMessage());
             }
         }
 
@@ -90,28 +96,31 @@ public class StorageController {
         response.put("uploaded", uploadedFiles);
         response.put("errors", errors);
 
-        if (uploadedFiles.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-        }
-
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Delete an uploaded file
+     * Delete a file
      *
-     * @param path The path of the file to delete
-     * @return Success message
+     * @param path The file path to delete
+     * @return Success/error response
      */
     @DeleteMapping("/delete")
-    public ResponseEntity<?> deleteFile(@RequestParam("path") String path) {
-        boolean deleted = storageService.deleteFile(path);
+    public ResponseEntity<?> deleteFile(@RequestParam String path) {
+        try {
+            boolean deleted = storageService.deleteFile(path);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", deleted);
-        response.put("message", deleted ? "File deleted successfully" : "Failed to delete file");
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", deleted);
+            response.put("message", deleted ? "File deleted successfully" : "File not found");
 
-        return deleted ? ResponseEntity.ok(response) : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error deleting file: {}", path, e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to delete file: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
     }
 }
-

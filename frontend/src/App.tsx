@@ -10,6 +10,7 @@ import MarketplacePage from './pages/MarketplacePage';
 import ListingDetailPage from './pages/ListingDetailPage';
 import ChatPage from './pages/ChatPage';
 import JobsPage from './pages/JobsPage';
+import TutoringPage from './pages/TutoringPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -77,7 +78,16 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/tutoring"
+              element={
+                <ProtectedRoute>
+                  <TutoringPage />
+                </ProtectedRoute>
+              }
+            />
 
+            {/* Default redirect */}
             {/* Default redirect */}
             <Route 
               path="/" 

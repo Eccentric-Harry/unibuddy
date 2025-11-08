@@ -8,8 +8,11 @@ export interface ListingImage {
 export interface ListingCreateRequest {
   title: string;
   description: string;
-  price: number;
+  price: number; // Changed to number only for backend compatibility
   category: string;
+  condition?: string;
+  year?: number;
+  registrationNo?: string;
   images: ListingImage[];
 }
 
@@ -17,6 +20,7 @@ export interface SellerInfo {
   id: string;
   name: string;
   avatarUrl?: string;
+  email?: string;
   year?: number;
   collegeName?: string;
   registrationNo?: string;
@@ -35,6 +39,9 @@ export interface ListingResponse {
   description: string;
   price: number;
   category: string;
+  condition?: string;
+  year?: number;
+  registrationNo?: string;
   images: ListingImage[];
   status: 'ACTIVE' | 'RESERVED' | 'SOLD' | 'INACTIVE';
   seller: SellerInfo;

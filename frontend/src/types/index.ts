@@ -30,6 +30,8 @@ export interface RegisterRequest {
   email: string;
   password: string;
   collegeCode?: string;
+  year?: number;
+  registrationNo?: string;
 }
 
 export interface LoginRequest {

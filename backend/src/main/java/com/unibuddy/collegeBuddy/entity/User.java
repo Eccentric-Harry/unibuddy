@@ -34,11 +34,14 @@ public class User implements UserDetails {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "college_id")
     private College college;
 
     private Short year; // Academic year
+
+    @Column(name = "registration_no", length = 100)
+    private String registrationNo;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

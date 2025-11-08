@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import type { ListingResponse } from '../../types/marketplace';
-import { ImageModal } from '../ui/ImageModal';
+import { ImageModal } from '../ui/image-modal';
+import { getImageUrl } from '../../utils';
 
 interface ListingCardProps {
   listing: ListingResponse;
@@ -17,7 +18,7 @@ export function ListingCard({ listing, onExpressInterest, onMessageSeller }: Lis
   const [selectedImageUrl, setSelectedImageUrl] = useState('');
 
   const primaryImage = listing.images && listing.images.length > 0
-    ? listing.images[0].url
+    ? getImageUrl(listing.images[0].url)
     : 'https://placehold.co/300x200/e2e8f0/1e293b?text=No+Image';
 
   const formatPrice = (price: number) => {
@@ -47,7 +48,7 @@ export function ListingCard({ listing, onExpressInterest, onMessageSeller }: Lis
 
   const handleImageClick = (e: React.MouseEvent, url: string) => {
     e.stopPropagation();
-    setSelectedImageUrl(url);
+    setSelectedImageUrl(getImageUrl(url));
     setImageModalOpen(true);
   };
 
@@ -79,7 +80,7 @@ export function ListingCard({ listing, onExpressInterest, onMessageSeller }: Lis
             src={primaryImage}
             alt={listing.images[0]?.alt || listing.title}
             className="object-cover w-full h-full"
-            onClick={(e) => handleImageClick(e, primaryImage)}
+            onClick={(e) => handleImageClick(e, listing.images[0]?.url || '')}
           />
           <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${statusDisplay.color}`}>
             {statusDisplay.text}

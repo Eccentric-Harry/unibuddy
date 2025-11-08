@@ -175,6 +175,7 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(registerRequest.getPassword()));
         user.setCollege(college);
         user.setYear(registerRequest.getYear());
+        user.setRegistrationNo(registerRequest.getRegistrationNo());
         user.setRole(User.Role.STUDENT);
         user.setEmailVerified(true); // Mark as verified since OTP was validated
         

@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useToast } from '../ui/use-toast';
-import { createListing, storageApi } from '../../services/api';
+import { api, marketplaceApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import type { ListingImage } from '../../types/marketplace';
 import imageCompression from 'browser-image-compression';
@@ -25,6 +25,15 @@ const CATEGORIES = [
   'Miscellaneous'
 ];
 
+const CONDITIONS = [
+  'Brand New',
+  'Like New',
+  'Excellent',
+  'Good',
+  'Fair',
+  'Poor'
+];
+
 const MAX_IMAGES = 5;
 const MAX_FILE_SIZE_MB = 5;
 
@@ -35,7 +44,10 @@ export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListing
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [category, setCategory] = useState(CATEGORIES[0].toLowerCase()); // Initialize as lowercase
+  const [condition, setCondition] = useState(CONDITIONS[0]);
+  const [year, setYear] = useState('');
+  const [registrationNo, setRegistrationNo] = useState('');
   const [images, setImages] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -131,7 +143,11 @@ export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListing
       const imagePromises = images.map(async (file, index) => {
         try {
           const compressedFile = await compressImage(file);
-          const response = await storageApi.uploadImage(compressedFile);
+          const formData = new FormData();
+          formData.append('file', compressedFile);
+          const response = await api.post('/storage/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
           setUploadProgress(prev => prev + (100 / images.length));
           return response.data;
         } catch (error) {
@@ -148,14 +164,25 @@ export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListing
         throw new Error('Failed to upload images');
       }
 
-      // Create listing
-      await createListing({
+      // Prepare listing data
+      const listingData = {
         title,
         description,
-        price: parseFloat(price),
+        price: Number(price), // Send as number for backend BigDecimal conversion
         category,
+        condition,
+        year: year ? parseInt(year) : undefined,
+        registrationNo: registrationNo || undefined,
         images: validImages
-      });
+      };
+
+      // Debug: Log the data being sent
+      console.log('Creating listing with data:', listingData);
+      console.log('Price type:', typeof listingData.price);
+      console.log('Images count:', listingData.images.length);
+
+      // Create listing with proper price formatting
+      await marketplaceApi.createListing(listingData);
 
       toast({
         title: 'Listing created',
@@ -166,7 +193,10 @@ export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListing
       setTitle('');
       setDescription('');
       setPrice('');
-      setCategory(CATEGORIES[0]);
+      setCategory(CATEGORIES[0].toLowerCase());
+      setCondition(CONDITIONS[0]);
+      setYear('');
+      setRegistrationNo('');
       setImages([]);
       setIsUploading(false);
       setUploadProgress(0);
@@ -175,12 +205,28 @@ export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListing
       onClose();
     } catch (error: any) {
       console.error('Error creating listing:', error);
+      console.error('Error response data:', error?.response?.data);
+      console.error('Error response status:', error?.response?.status);
 
       // Provide more specific error messages
       let errorMessage = 'Failed to create listing. Please try again.';
 
-      if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
+      if (error?.response?.data) {
+        const data = error.response.data;
+        
+        // Handle validation errors (from MethodArgumentNotValidException)
+        if (data.errors && typeof data.errors === 'object') {
+          const validationErrors = Object.entries(data.errors)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join('\n');
+          errorMessage = `Validation failed:\n${validationErrors}`;
+        } 
+        // Handle other error types
+        else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.error) {
+          errorMessage = data.error;
+        }
       } else if (error?.message) {
         errorMessage = error.message;
       }
@@ -261,6 +307,51 @@ export function CreateListingModal({ isOpen, onClose, onSuccess }: CreateListing
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="condition">Condition</Label>
+              <select
+                id="condition"
+                value={condition}
+                onChange={(e) => setCondition(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                disabled={isUploading}
+              >
+                {CONDITIONS.map((cond) => (
+                  <option key={cond} value={cond}>
+                    {cond}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="year">Year (Optional)</Label>
+                <Input
+                  id="year"
+                  type="number"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  placeholder="e.g., 2"
+                  min="1"
+                  max="6"
+                  disabled={isUploading}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="registrationNo">Reg. No (Optional)</Label>
+                <Input
+                  id="registrationNo"
+                  type="text"
+                  value={registrationNo}
+                  onChange={(e) => setRegistrationNo(e.target.value)}
+                  placeholder="e.g., 21BCE1234"
+                  disabled={isUploading}
+                />
               </div>
             </div>
 

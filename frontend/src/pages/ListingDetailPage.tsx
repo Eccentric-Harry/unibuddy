@@ -5,7 +5,8 @@ import { useToast } from '../components/ui/use-toast';
 import { getListingById, expressInterest, updateListingStatus, reportListing } from '../services/api';
 import type { ListingResponse, ExpressInterestRequest } from '../types/marketplace';
 import { useAuthStore } from '../store/authStore';
-import { ImageModal } from '../components/ui/ImageModal';
+import { ImageModal } from '../components/ui/image-modal';
+import { getImageUrl } from '../utils';
 
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -52,7 +53,7 @@ export default function ListingDetailPage() {
     if (!listing || !listing.images[index]) return;
 
     setSelectedImageIndex(index);
-    setSelectedImageUrl(listing.images[index].url);
+    setSelectedImageUrl(getImageUrl(listing.images[index].url));
     setImageModalOpen(true);
   };
 
@@ -60,14 +61,14 @@ export default function ListingDetailPage() {
     if (!listing) return;
     const nextIndex = (selectedImageIndex + 1) % listing.images.length;
     setSelectedImageIndex(nextIndex);
-    setSelectedImageUrl(listing.images[nextIndex].url);
+    setSelectedImageUrl(getImageUrl(listing.images[nextIndex].url));
   };
 
   const handlePrevImage = () => {
     if (!listing) return;
     const prevIndex = (selectedImageIndex - 1 + listing.images.length) % listing.images.length;
     setSelectedImageIndex(prevIndex);
-    setSelectedImageUrl(listing.images[prevIndex].url);
+    setSelectedImageUrl(getImageUrl(listing.images[prevIndex].url));
   };
 
   const handleExpressInterest = async () => {
@@ -245,7 +246,7 @@ export default function ListingDetailPage() {
             {listing.images && listing.images.length > 0 ? (
               <>
                 <img
-                  src={listing.images[selectedImageIndex].url}
+                  src={getImageUrl(listing.images[selectedImageIndex].url)}
                   alt={listing.images[selectedImageIndex].alt || listing.title}
                   className="w-full h-full object-contain cursor-pointer dark:opacity-90"
                   onClick={() => handleImageClick(selectedImageIndex)}
@@ -290,7 +291,7 @@ export default function ListingDetailPage() {
                   onClick={() => setSelectedImageIndex(index)}
                 >
                   <img
-                    src={image.url}
+                    src={getImageUrl(image.url)}
                     alt={image.alt || `${listing.title} - ${index + 1}`}
                     className="w-full h-full object-cover dark:opacity-90"
                     loading="lazy"
@@ -424,18 +425,22 @@ export default function ListingDetailPage() {
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700 py-4">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-slate-600 dark:text-slate-400">Year</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">{listing.seller.year}</span>
-              </div>
+              {(listing.year || listing.seller.year) && (
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-slate-600 dark:text-slate-400">Year</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{listing.year || listing.seller.year}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-sm mb-2">
                 <span className="text-slate-600 dark:text-slate-400">College</span>
                 <span className="font-medium text-slate-900 dark:text-slate-100">{listing.seller.collegeName}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400">Registration No</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">{listing.seller.registrationNo}</span>
-              </div>
+              {(listing.registrationNo || listing.seller.registrationNo) && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400">Registration No</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{listing.registrationNo || listing.seller.registrationNo}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-2 mt-4">

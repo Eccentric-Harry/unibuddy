@@ -43,6 +43,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/health/**",
+                                "/api/debug/**",  // Allow public access to debug endpoints (remove in production)
+                                "/api/files/**",  // Allow public access to files endpoints
+                                "/uploads/**",  // Allow public access to uploaded images
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
@@ -76,8 +79,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow specific origin instead of wildcard pattern for better security
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        // Allow specific origins for frontend access
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",   // React default port
+                "http://localhost:5173"    // Vite default port
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
         configuration.setExposedHeaders(List.of("Authorization"));

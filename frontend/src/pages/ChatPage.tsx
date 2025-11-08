@@ -269,9 +269,9 @@ export default function ChatPage() {
 
         <div className="grid grid-cols-12 gap-6 h-[calc(100vh-12rem)]">
           {/* Left Sidebar - Tabs & List */}
-          <div className="col-span-4 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 flex flex-col theme-transition">
+          <div className="col-span-4 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 flex flex-col theme-transition h-full">
             {/* Tabs */}
-            <div className="flex border-b border-slate-200 dark:border-slate-700">
+            <div className="flex border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -327,7 +327,7 @@ export default function ChatPage() {
           </div>
 
           {/* Right Panel - Chat Window */}
-          <div className="col-span-8 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 flex flex-col theme-transition">
+          <div className="col-span-8 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 flex flex-col theme-transition h-full overflow-hidden">
             {activeTab === 'marketplace' ? (
               selectedConversationId ? (
                 <ChatWindow conversationId={selectedConversationId} />

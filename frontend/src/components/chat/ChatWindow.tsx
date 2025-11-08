@@ -4,6 +4,7 @@ import { MoreVertical, Phone, Video } from 'lucide-react';
 import { conversationApi } from '../../services/api';
 import MessageList from './MessageList';
 import { MessageComposer } from './MessageComposer';
+import { useAuthStore } from '../../store/authStore';
 import { Button } from '../ui/button';
 import type { Message } from '../../types';
 
@@ -30,12 +31,16 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
 
       // Create optimistic message
       const messageText = formData.get('messageText') as string;
+      const user = useAuthStore.getState().user;
+      if (!user) throw new Error('User not authenticated');
+      
       const optimisticMessage: Message = {
         id: `temp-${Date.now()}`,
         messageText,
         sender: {
-          id: 'current-user',
-          name: 'You',
+          id: user.id, // Ensure this matches exactly with the server response
+          name: user.name || 'You',
+          avatarUrl: user.avatarUrl // Include avatar if available
         },
         createdAt: new Date().toISOString(),
       };
@@ -76,9 +81,9 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
   const allMessages = [...messages, ...optimisticMessages];
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-white dark:bg-slate-900">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700 flex-shrink-0 bg-white dark:bg-slate-900 sticky top-0 z-10">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
             <span className="text-sm font-medium text-gray-600">
@@ -111,8 +116,58 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Members Popup */}
+      {showMembers && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div ref={membersRef} className="bg-white dark:bg-slate-900 rounded-lg w-full max-w-md max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold">College Members</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowMembers(false)}
+                className="hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {membersData?.data ? (
+                <div className="space-y-3">
+                  {membersData.data.map((member) => (
+                    <div key={member.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
+                        {member.avatarUrl ? (
+                          <img
+                            src={member.avatarUrl}
+                            alt={member.name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                            {member.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">{member.name}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Year {member.year}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-32 text-slate-500 dark:text-slate-400">
+                  Loading members...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Message Composer */}
-      <div className="border-t border-gray-200 p-4 flex-shrink-0">
+      <div className="border-t border-gray-200 dark:border-slate-700 p-4 flex-shrink-0">
         <MessageComposer
           onSendMessage={handleSendMessage}
           disabled={sendMessageMutation.isPending}

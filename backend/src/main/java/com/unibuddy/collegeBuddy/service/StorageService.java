@@ -2,46 +2,42 @@ package com.unibuddy.collegeBuddy.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
 @Slf4j
 public class StorageService {
 
-    private final RestTemplate restTemplate;
-    private final String bucketName;
-    private final String supabaseUrl;
-    private final String supabaseServiceKey;
+    private final Path uploadPath;
+    private final String baseUrl;
 
     public StorageService(
-            @Value("${supabase.storage.bucket:listing-images}") String bucketName,
-            @Value("${supabase.url:https://fdeadgzxjuqevlohtvsl.supabase.co}") String supabaseUrl,
-            @Value("${supabase.service-role-key:#{null}}") String supabaseServiceKey) {
+            @Value("${app.upload.dir:uploads}") String uploadDir,
+            @Value("${app.base-url:http://localhost:8080}") String baseUrl) {
 
-        this.restTemplate = new RestTemplate();
-        this.bucketName = bucketName;
-        this.supabaseUrl = supabaseUrl;
-        this.supabaseServiceKey = supabaseServiceKey;
+        this.baseUrl = baseUrl;
+        this.uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
 
-        log.info("StorageService initialized with bucket: {} and URL: {}", bucketName, supabaseUrl);
-
-        if (supabaseServiceKey == null || supabaseServiceKey.isEmpty() || supabaseServiceKey.equals("YOUR_SERVICE_ROLE_KEY_HERE")) {
-            log.error("⚠️  CRITICAL: Supabase service role key is not configured! Uploads will fail.");
-            log.error("⚠️  Please set supabase.service-role-key in application.properties");
-        } else {
-            log.info("✓ Supabase service role key is configured");
+        try {
+            Files.createDirectories(this.uploadPath);
+            log.info("✓ Upload directory created/verified at: {}", this.uploadPath);
+        } catch (IOException e) {
+            log.error("Failed to create upload directory: {}", this.uploadPath, e);
+            throw new RuntimeException("Could not create upload directory!", e);
         }
     }
 
     /**
-     * Upload a file to Supabase Storage using REST API
+     * Upload a file to local storage
      *
      * @param file   The multipart file to upload
      * @param userId The ID of the user uploading the file
@@ -49,11 +45,6 @@ public class StorageService {
      * @throws IOException If file upload fails
      */
     public UploadedFileDto uploadFile(MultipartFile file, UUID userId) throws IOException {
-        // Check if service key is configured
-        if (supabaseServiceKey == null || supabaseServiceKey.isEmpty() || supabaseServiceKey.equals("YOUR_SERVICE_ROLE_KEY_HERE")) {
-            throw new IOException("Supabase service role key is not configured. Please add it to application.properties");
-        }
-
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");
         }
@@ -70,111 +61,77 @@ public class StorageService {
             throw new IllegalArgumentException("File size exceeds maximum limit of 5MB");
         }
 
-        // Generate unique file path
-        String fileExtension = getFileExtension(file.getOriginalFilename());
-        String fileName = String.format("%s/%d-%s.%s",
-                userId,
+        // Clean filename and generate unique name
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isBlank()) {
+            originalFilename = "file.jpg";
+        }
+        originalFilename = StringUtils.cleanPath(originalFilename);
+        String fileExtension = getFileExtension(originalFilename);
+        String uniqueFileName = String.format("%d-%s.%s",
                 System.currentTimeMillis(),
                 UUID.randomUUID().toString().substring(0, 8),
                 fileExtension);
 
         try {
-            // Build the Supabase Storage URL - use the correct path format
-            String uploadUrl = String.format("%s/storage/v1/object/%s/%s",
-                    supabaseUrl, bucketName, fileName);
+            // Use flat directory structure instead of user-specific subdirectories
+            // Create upload directory if it doesn't exist
+            Files.createDirectories(this.uploadPath);
 
-            log.info("Uploading file to: {}", uploadUrl);
-            log.debug("File details - Name: {}, Size: {} bytes, Type: {}",
-                    file.getOriginalFilename(), file.getSize(), contentType);
+            // Save file directly in uploads directory
+            Path targetLocation = this.uploadPath.resolve(uniqueFileName);
+            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-            // Create headers with authorization
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(contentType));
-            headers.set("Authorization", "Bearer " + supabaseServiceKey);
-            headers.set("apikey", supabaseServiceKey);
+            // Generate URLs for flat structure
+            String relativePath = "/uploads/" + uniqueFileName;
+            String publicUrl = String.format("%s/uploads/%s", baseUrl, uniqueFileName);
 
-            // Create request entity with file bytes
-            HttpEntity<byte[]> requestEntity = new HttpEntity<>(file.getBytes(), headers);
+            log.info("✓ File uploaded successfully to: {}", targetLocation);
+            log.debug("Public URL: {}", publicUrl);
 
-            // Upload file
-            ResponseEntity<String> response = restTemplate.exchange(
-                    uploadUrl,
-                    HttpMethod.POST,
-                    requestEntity,
-                    String.class
-            );
+            return new UploadedFileDto(relativePath, relativePath, getFileNameWithoutExtension(originalFilename));
 
-            log.info("Supabase response status: {}", response.getStatusCode());
-            log.debug("Supabase response body: {}", response.getBody());
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                // Generate public URL
-                String publicUrl = String.format("%s/storage/v1/object/public/%s/%s",
-                        supabaseUrl, bucketName, fileName);
-
-                log.info("✓ File uploaded successfully: {}", publicUrl);
-
-                return new UploadedFileDto(publicUrl, fileName, getFileNameWithoutExtension(file.getOriginalFilename()));
-            } else {
-                String errorMsg = String.format("Upload failed with status: %s, body: %s",
-                        response.getStatusCode(), response.getBody());
-                log.error(errorMsg);
-                throw new IOException(errorMsg);
-            }
-
-        } catch (HttpClientErrorException e) {
-            // Supabase returned 4xx error
-            String errorBody = e.getResponseBodyAsString();
-            log.error("Supabase client error ({}): {}", e.getStatusCode(), errorBody);
-
-            if (errorBody.contains("Bucket not found")) {
-                throw new IOException("Storage bucket '" + bucketName + "' not found. Please create it in Supabase dashboard.");
-            } else if (errorBody.contains("permission") || errorBody.contains("forbidden")) {
-                throw new IOException("Permission denied. Check your service role key or bucket policies.");
-            } else {
-                throw new IOException("Supabase upload failed: " + errorBody);
-            }
-
-        } catch (Exception e) {
-            log.error("Error uploading file to Supabase Storage: {}", e.getMessage(), e);
+        } catch (IOException e) {
+            log.error("Error uploading file to local storage: {}", e.getMessage(), e);
             throw new IOException("Failed to upload file: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Delete a file from Supabase Storage
+     * Delete a file from local storage
      *
-     * @param filePath The path of the file to delete
+     * @param filePath The relative path of the file to delete (e.g., "/uploads/filename.jpg" or "filename.jpg")
      * @return true if deletion was successful
      */
     public boolean deleteFile(String filePath) {
-        if (supabaseServiceKey == null || supabaseServiceKey.isEmpty()) {
-            log.error("Cannot delete file: service role key not configured");
-            return false;
-        }
-
         try {
-            String deleteUrl = String.format("%s/storage/v1/object/%s/%s",
-                    supabaseUrl, bucketName, filePath);
+            // Extract filename from path (handle both /uploads/filename.jpg and filename.jpg)
+            String fileName = filePath;
+            if (filePath.startsWith("/uploads/")) {
+                fileName = filePath.substring("/uploads/".length());
+            } else if (filePath.contains("/")) {
+                fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+            }
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + supabaseServiceKey);
-            headers.set("apikey", supabaseServiceKey);
+            Path fileToDelete = this.uploadPath.resolve(fileName).normalize();
 
-            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+            // Security check: ensure the file is within the upload directory
+            if (!fileToDelete.startsWith(this.uploadPath)) {
+                log.warn("Attempted to delete file outside upload directory: {}", filePath);
+                return false;
+            }
 
-            ResponseEntity<String> response = restTemplate.exchange(
-                    deleteUrl,
-                    HttpMethod.DELETE,
-                    requestEntity,
-                    String.class
-            );
+            if (Files.exists(fileToDelete)) {
+                Files.delete(fileToDelete);
+                log.info("✓ File deleted successfully: {}", fileName);
+                return true;
+            } else {
+                log.warn("File not found: {}", fileName);
+                return false;
+            }
 
-            log.info("File deleted successfully: {}", filePath);
-            return response.getStatusCode().is2xxSuccessful();
-
-        } catch (Exception e) {
-            log.error("Error deleting file from Supabase Storage: {}", filePath, e);
+        } catch (IOException e) {
+            log.error("Error deleting file from local storage: {}", filePath, e);
             return false;
         }
     }

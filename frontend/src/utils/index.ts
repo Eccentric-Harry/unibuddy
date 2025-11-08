@@ -50,6 +50,29 @@ export function formatTimeAgo(date: string | Date): string {
   return formatDate(date);
 }
 
+/**
+ * Constructs full image URL from a relative path
+ * @param imagePath - The relative image path (e.g., '/uploads/filename.jpg')
+ * @returns Full image URL with backend base URL
+ */
+export function getImageUrl(imagePath: string): string {
+  if (!imagePath) return '';
+
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+
+  // Get the API base URL without the '/api' suffix
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  const baseUrl = apiUrl.replace('/api', '');
+
+  // Ensure the path starts with /
+  const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+
+  return `${baseUrl}${cleanPath}`;
+}
+
 export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);

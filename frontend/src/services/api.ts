@@ -8,27 +8,24 @@ import type {
   Message,
   Conversation,
   GlobalChat,
-  GlobalMessage,
+  GlobalMessage
 } from '../types';
 
 import type {
   ListingCreateRequest,
   ListingResponse,
   ListingFilters,
+  ListingImage,
   ExpressInterestRequest,
   StatusUpdateRequest,
   PaginatedResponse
 } from '../types/marketplace';
 
-// Create axios instance with base configuration
-const api = axios.create({
+export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor to add auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
@@ -37,37 +34,31 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for token refresh
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          const response = await axios.post('/api/auth/refresh', {
-            refreshToken,
-          });
-          
-          const { accessToken } = response.data;
-          localStorage.setItem('accessToken', accessToken);
-          
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-      }
-    }
-    
-    return Promise.reject(error);
+// Storage API calls
+export const storageApi = {
+  uploadImage: async (file: File): Promise<AxiosResponse<{ url: string; path: string; alt: string }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/storage/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  uploadMultipleImages: async (files: File[]): Promise<AxiosResponse<{
+    uploaded: { url: string; path: string; alt: string }[];
+    errors: string[];
+  }>> => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    return api.post('/storage/upload-multiple', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  deleteImage: async (path: string): Promise<AxiosResponse<{ success: boolean; message: string }>> => {
+    return api.delete('/storage/delete', { params: { path } });
   }
-);
+};
 
 // Auth API calls
 export const authApi = {
@@ -109,6 +100,20 @@ export const collegeApi = {
   
   getCollege: (id: number): Promise<AxiosResponse<College>> =>
     api.get(`/colleges/${id}`),
+
+  getCollegeMembers: async (collegeId: number): Promise<AxiosResponse<User[]>> => {
+    try {
+      const response = await api.get(`/users/by-college`, {
+        params: {
+          collegeId: collegeId
+        }
+      });
+      return response;
+    } catch (error) {
+      console.error('Error fetching college members:', error);
+      throw error;
+    }
+  },
 };
 
 // Chat API calls
@@ -118,6 +123,35 @@ export const chatApi = {
   
   sendMessage: (data: { channel: string; body: string; attachments?: any[] }): Promise<AxiosResponse<Message>> =>
     api.post('/chat/messages', data),
+};
+
+// Global Chat API calls
+export const globalChatApi = {
+  getGlobalChats: (): Promise<AxiosResponse<GlobalChat[]>> =>
+    api.get('/global-chats'),
+  
+  getGlobalChatMessages: (globalChatId: string, page = 0, size = 50): Promise<AxiosResponse<{ content: GlobalMessage[]; totalPages: number; totalElements: number }>> =>
+    api.get(`/global-chats/${globalChatId}/messages`, { params: { page, size } }),
+  
+  sendGlobalMessage: (globalChatId: string, data: FormData): Promise<AxiosResponse<GlobalMessage>> =>
+    api.post(`/global-chats/${globalChatId}/messages`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+};
+
+// Conversation API calls
+export const conversationApi = {
+  getConversations: (page = 0, size = 20): Promise<AxiosResponse<{ content: Conversation[]; totalPages: number; totalElements: number }>> =>
+    api.get('/conversations', { params: { page, size } }),
+  
+  getConversation: (id: string): Promise<AxiosResponse<Conversation>> =>
+    api.get(`/conversations/${id}`),
+  
+  sendMessage: (conversationId: string, message: string): Promise<AxiosResponse<Message>> =>
+    api.post(`/conversations/${conversationId}/messages`, { body: message }),
+  
+  getMessages: (conversationId: string, page = 0, size = 50): Promise<AxiosResponse<{ content: Message[]; totalPages: number }>> =>
+    api.get(`/conversations/${conversationId}/messages`, { params: { page, size } }),
 };
 
 // Marketplace API calls
@@ -144,37 +178,6 @@ export const marketplaceApi = {
     api.post(`/listings/${id}/report`, { reason }),
 };
 
-// Conversation API calls
-export const conversationApi = {
-  getConversations: (page = 0, size = 20): Promise<AxiosResponse<{ content: Conversation[]; totalPages: number; totalElements: number }>> =>
-    api.get('/conversations', { params: { page, size } }),
-  
-  getConversationMessages: (conversationId: string, page = 0, size = 50): Promise<AxiosResponse<{ content: Message[]; totalPages: number; totalElements: number }>> =>
-    api.get(`/conversations/${conversationId}/messages`, { params: { page, size } }),
-  
-  sendMessage: (conversationId: string, data: FormData): Promise<AxiosResponse<Message>> =>
-    api.post(`/conversations/${conversationId}/messages`, data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  
-  startConversation: (listingId: string): Promise<AxiosResponse<Conversation>> =>
-    api.post(`/conversations/start/${listingId}`),
-};
-
-// Global Chat API calls
-export const globalChatApi = {
-  getGlobalChats: (): Promise<AxiosResponse<GlobalChat[]>> =>
-    api.get('/global-chats'),
-  
-  getGlobalChatMessages: (globalChatId: string, page = 0, size = 50): Promise<AxiosResponse<{ content: GlobalMessage[]; totalPages: number; totalElements: number }>> =>
-    api.get(`/global-chats/${globalChatId}/messages`, { params: { page, size } }),
-  
-  sendGlobalMessage: (globalChatId: string, data: FormData): Promise<AxiosResponse<GlobalMessage>> =>
-    api.post(`/global-chats/${globalChatId}/messages`, data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-};
-
 // Individual function exports for backward compatibility
 export const createListing = (listing: ListingCreateRequest): Promise<AxiosResponse<ListingResponse>> => {
   return api.post('/listings', listing);
@@ -199,31 +202,3 @@ export const updateListingStatus = (listingId: string, request: StatusUpdateRequ
 export const reportListing = (listingId: string, reason?: string): Promise<AxiosResponse<{ message: string }>> => {
   return api.post(`/listings/${listingId}/report`, { reason });
 };
-
-// Storage API calls
-export const storageApi = {
-  uploadImage: (file: File): Promise<AxiosResponse<{ url: string; path: string; alt: string }>> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/storage/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
-
-  uploadMultipleImages: (files: File[]): Promise<AxiosResponse<{
-    uploaded: { url: string; path: string; alt: string }[];
-    errors: string[];
-  }>> => {
-    const formData = new FormData();
-    files.forEach(file => formData.append('files', file));
-    return api.post('/storage/upload-multiple', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
-
-  deleteImage: (path: string): Promise<AxiosResponse<{ success: boolean; message: string }>> => {
-    return api.delete('/storage/delete', { params: { path } });
-  },
-};
-
-export default api;
