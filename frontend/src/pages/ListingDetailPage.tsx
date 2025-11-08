@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/use-toast';
-import { getListingById, expressInterest, updateListingStatus, reportListing } from '../services/api';
+import { getListingById, expressInterest, updateListingStatus, reportListing, conversationApi } from '../services/api';
 import type { ListingResponse, ExpressInterestRequest } from '../types/marketplace';
 import { useAuthStore } from '../store/authStore';
 import { ImageModal } from '../components/ui/image-modal';
@@ -114,20 +114,35 @@ export default function ListingDetailPage() {
     }
 
     try {
-      // Use the expressInterest endpoint but don't reserve the item
-      const request: ExpressInterestRequest = {
-        message: `Hi, I'm interested in your listing "${listing.title}". Is it still available?`
-      };
-      const response = await expressInterest(id, request);
+      // Start or get existing conversation with the seller
+      const response = await conversationApi.startConversation(id);
+      const conversationId = response.data.id;
 
-      navigate(`/conversations/${response.data.conversationId}`);
-    } catch (error) {
-      console.error('Error messaging seller:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to start conversation. Please try again.',
-        variant: 'destructive'
-      });
+      // Navigate to chat page with marketplace tab and conversation pre-selected
+      navigate(`/chat?tab=marketplace&conversation=${conversationId}`);
+    } catch (error: any) {
+      console.error('Error starting conversation:', error);
+
+      // Handle specific error cases
+      if (error.response?.status === 403 || error.response?.data?.message?.includes('verified')) {
+        toast({
+          title: 'Verification Required',
+          description: 'You must verify your college email before messaging sellers.',
+          variant: 'destructive'
+        });
+      } else if (error.response?.data?.message?.includes('yourself')) {
+        toast({
+          title: 'Invalid Action',
+          description: 'You cannot message yourself.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to start conversation. Please try again.',
+          variant: 'destructive'
+        });
+      }
     }
   };
 

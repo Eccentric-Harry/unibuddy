@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MoreVertical, Phone, Video } from 'lucide-react';
+import { MoreVertical } from 'lucide-react';
 import { conversationApi } from '../../services/api';
 import MessageList from './MessageList';
 import { MessageComposer } from './MessageComposer';
@@ -19,7 +19,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
 
   const { data: messagesData } = useQuery({
     queryKey: ['messages', conversationId],
-    queryFn: () => conversationApi.getConversationMessages(conversationId),
+    queryFn: () => conversationApi.getMessages(conversationId),
     enabled: !!conversationId,
   });
 
@@ -92,18 +92,12 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
             </span>
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Conversation</h2>
-            <p className="text-sm text-gray-500">Active now</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Conversation</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Active now</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="hidden sm:flex">
-            <Phone className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm" className="hidden sm:flex">
-            <Video className="w-4 h-4" />
-          </Button>
           <Button variant="outline" size="sm">
             <MoreVertical className="w-4 h-4" />
           </Button>
@@ -115,56 +109,6 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
         <MessageList messages={allMessages} />
         <div ref={messagesEndRef} />
       </div>
-
-      {/* Members Popup */}
-      {showMembers && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div ref={membersRef} className="bg-white dark:bg-slate-900 rounded-lg w-full max-w-md max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
-              <h3 className="text-lg font-semibold">College Members</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowMembers(false)}
-                className="hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              {membersData?.data ? (
-                <div className="space-y-3">
-                  {membersData.data.map((member) => (
-                    <div key={member.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
-                      <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
-                        {member.avatarUrl ? (
-                          <img
-                            src={member.avatarUrl}
-                            alt={member.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                            {member.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-slate-100">{member.name}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Year {member.year}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-32 text-slate-500 dark:text-slate-400">
-                  Loading members...
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Message Composer */}
       <div className="border-t border-gray-200 dark:border-slate-700 p-4 flex-shrink-0">

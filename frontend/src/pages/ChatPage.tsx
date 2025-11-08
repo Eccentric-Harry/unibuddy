@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { MessageSquare, Users, ChevronDown, ArrowLeft } from 'lucide-react';
 import { ConversationList } from '../components/chat/ConversationList';
 import { GlobalChatList } from '../components/chat/GlobalChatList';
@@ -13,6 +14,7 @@ import type { ChatTab } from '../types';
 
 export default function ChatPage() {
   const { user } = useAuthStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'marketplace' | 'global'>('global');
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [selectedGlobalChatId, setSelectedGlobalChatId] = useState<string | null>(null);
@@ -92,6 +94,28 @@ export default function ChatPage() {
       setSelectedGlobalChatId(globalChatsData.data[0].id);
     }
   }, [activeTab, globalChatsData, selectedGlobalChatId]);
+
+  // Handle URL parameters for auto-selection
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const conversationId = searchParams.get('conversation');
+
+    if (tab === 'marketplace') {
+      setActiveTab('marketplace');
+    }
+
+    if (conversationId) {
+      setSelectedConversationId(conversationId);
+      setSelectedGlobalChatId(null);
+      if (isMobile) {
+        setShowChatView(true);
+      }
+      // Clear URL params after setting state
+      searchParams.delete('tab');
+      searchParams.delete('conversation');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, isMobile]);
 
   if (!user) {
     return (

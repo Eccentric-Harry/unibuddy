@@ -31,6 +31,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // If the request data is FormData, remove Content-Type to let axios set it automatically with boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+
   return config;
 });
 
@@ -147,11 +153,24 @@ export const conversationApi = {
   getConversation: (id: string): Promise<AxiosResponse<Conversation>> =>
     api.get(`/conversations/${id}`),
   
-  sendMessage: (conversationId: string, message: string): Promise<AxiosResponse<Message>> =>
-    api.post(`/conversations/${conversationId}/messages`, { body: message }),
-  
+  sendMessage: (conversationId: string, data: string | FormData): Promise<AxiosResponse<Message>> => {
+    const formData = typeof data === 'string'
+      ? (() => {
+          const fd = new FormData();
+          fd.append('messageText', data);
+          return fd;
+        })()
+      : data;
+
+    // Let axios automatically set Content-Type with boundary for FormData
+    return api.post(`/conversations/${conversationId}/messages`, formData);
+  },
+
   getMessages: (conversationId: string, page = 0, size = 50): Promise<AxiosResponse<{ content: Message[]; totalPages: number }>> =>
     api.get(`/conversations/${conversationId}/messages`, { params: { page, size } }),
+
+  startConversation: (listingId: string): Promise<AxiosResponse<Conversation>> =>
+    api.post(`/conversations/start/${listingId}`),
 };
 
 // Marketplace API calls
