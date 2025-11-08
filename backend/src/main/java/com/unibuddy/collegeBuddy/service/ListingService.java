@@ -8,6 +8,7 @@ import com.unibuddy.collegeBuddy.entity.User;
 import com.unibuddy.collegeBuddy.repository.ConversationRepository;
 import com.unibuddy.collegeBuddy.repository.ListingRepository;
 import com.unibuddy.collegeBuddy.repository.MessageRepository;
+import com.unibuddy.collegeBuddy.repository.UserRepository;
 import org.hibernate.Hibernate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class ListingService {
     private final ListingRepository listingRepository;
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
+    private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final FileStorageService fileStorageService;
     private final ProfanityFilterService profanityFilterService;
@@ -220,10 +222,8 @@ public class ListingService {
     }
 
     private User getUserById(UUID userId) {
-        // Placeholder method - replace with actual user service call
-        User user = new User();
-        user.setId(userId);
-        return user;
+        return userRepository.findByIdWithCollege(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
     private ListingResponse mapToResponse(Listing listing) {

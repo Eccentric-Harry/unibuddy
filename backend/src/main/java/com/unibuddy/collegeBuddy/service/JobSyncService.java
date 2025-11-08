@@ -50,8 +50,9 @@ public class JobSyncService {
             "ui ux designer intern"
     };
 
-    // Sync jobs every 6 hours
-    @Scheduled(fixedRate = 21600000, initialDelay = 5000)
+    // Automatic sync disabled to preserve API quota
+    // Jobs will only sync when manually triggered via the /api/jobs/sync endpoint
+    // @Scheduled(fixedRate = 21600000, initialDelay = 5000)
     @Transactional
     public void syncJobs() {
         if (!syncEnabled) {
