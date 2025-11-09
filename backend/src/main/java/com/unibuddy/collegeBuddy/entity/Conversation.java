@@ -40,4 +40,12 @@ public class Conversation {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ConversationType type = ConversationType.MARKETPLACE;
+
+    public enum ConversationType {
+        MARKETPLACE, TUTORING
+    }
 }

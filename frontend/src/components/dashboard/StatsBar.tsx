@@ -32,7 +32,7 @@ export function StatsBar() {
     },
     {
       label: 'Active Users',
-      value: '2.4k',
+      value: '4',
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
@@ -40,7 +40,7 @@ export function StatsBar() {
     },
     {
       label: 'Tutors Available',
-      value: '94',
+      value: '3',
       icon: GraduationCap,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',

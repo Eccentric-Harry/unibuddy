@@ -9,13 +9,12 @@ import { GlobalChatWindow } from '../components/chat/GlobalChatWindow';
 import { useAuthStore } from '../store/authStore';
 import { websocketService } from '../services/websocket';
 import { conversationApi, globalChatApi } from '../services/api';
-import { Button } from '../components/ui/button';
 import type { ChatTab } from '../types';
 
 export default function ChatPage() {
   const { user } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'marketplace' | 'global'>('global');
+  const [activeTab, setActiveTab] = useState<'marketplace' | 'global' | 'tutoring'>('global');
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [selectedGlobalChatId, setSelectedGlobalChatId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -102,6 +101,8 @@ export default function ChatPage() {
 
     if (tab === 'marketplace') {
       setActiveTab('marketplace');
+    } else if (tab === 'tutoring') {
+      setActiveTab('tutoring');
     }
 
     if (conversationId) {
@@ -125,17 +126,21 @@ export default function ChatPage() {
     );
   }
 
+  const conversations = conversationsData?.data?.content || [];
+  const marketplaceConversations = conversations.filter(c => c.type === 'MARKETPLACE');
+  const tutoringConversations = conversations.filter(c => c.type === 'TUTORING');
+  const globalChats = globalChatsData?.data || [];
+
   const tabs: ChatTab[] = [
     { id: 'global', name: 'College Chat', count: globalChatsData?.data?.length },
-    { id: 'marketplace', name: 'Marketplace', count: conversationsData?.data?.content?.length },
+    { id: 'marketplace', name: 'Marketplace', count: marketplaceConversations.length },
+    { id: 'tutoring', name: 'Tutoring', count: tutoringConversations.length },
   ];
 
-  const conversations = conversationsData?.data?.content || [];
-  const globalChats = globalChatsData?.data || [];
   const selectedGlobalChat = globalChats.find(chat => chat.id === selectedGlobalChatId);
 
-  const handleChatSelection = (type: 'marketplace' | 'global', id: string) => {
-    if (type === 'marketplace') {
+  const handleChatSelection = (type: 'marketplace' | 'global' | 'tutoring', id: string) => {
+    if (type === 'marketplace' || type === 'tutoring') {
       setSelectedConversationId(id);
       setSelectedGlobalChatId(null);
     } else {
@@ -158,7 +163,7 @@ export default function ChatPage() {
     if (activeTab === 'global' && selectedGlobalChat) {
       return `#${selectedGlobalChat.name}`;
     }
-    if (activeTab === 'marketplace' && selectedConversationId) {
+    if ((activeTab === 'marketplace' || activeTab === 'tutoring') && selectedConversationId) {
       const conv = conversations.find(c => c.id === selectedConversationId);
       return conv?.otherUser.name || 'Conversation';
     }
@@ -236,9 +241,16 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto">
               {activeTab === 'marketplace' ? (
                 <ConversationList
-                  conversations={conversations}
+                  conversations={marketplaceConversations}
                   selectedConversation={selectedConversationId}
                   onSelectConversation={(id) => handleChatSelection('marketplace', id)}
+                  loading={conversationsLoading}
+                />
+              ) : activeTab === 'tutoring' ? (
+                <ConversationList
+                  conversations={tutoringConversations}
+                  selectedConversation={selectedConversationId}
+                  onSelectConversation={(id) => handleChatSelection('tutoring', id)}
                   loading={conversationsLoading}
                 />
               ) : (
@@ -268,7 +280,7 @@ export default function ChatPage() {
 
             {/* Chat Content */}
             <div className="flex-1">
-              {activeTab === 'marketplace' && selectedConversationId ? (
+              {(activeTab === 'marketplace' || activeTab === 'tutoring') && selectedConversationId ? (
                 <ChatWindow conversationId={selectedConversationId} />
               ) : activeTab === 'global' && selectedGlobalChatId ? (
                 <GlobalChatWindow 
@@ -304,19 +316,21 @@ export default function ChatPage() {
                     setSelectedConversationId(null);
                     setSelectedGlobalChatId(null);
                   }}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                  className={`flex-1 px-2 py-3 text-xs sm:text-sm font-medium transition-colors relative ${
                     activeTab === tab.id
                       ? 'text-indigo-600 dark:text-indigo-400'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                   }`}
                 >
-                  <div className="flex items-center justify-center space-x-2">
-                    {tab.id === 'global' ? (
-                      <Users className="w-4 h-4" />
-                    ) : (
-                      <MessageSquare className="w-4 h-4" />
-                    )}
-                    <span>{tab.name}</span>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      {tab.id === 'global' ? (
+                        <Users className="w-4 h-4 flex-shrink-0" />
+                      ) : (
+                        <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                      )}
+                      <span className="truncate">{tab.name}</span>
+                    </div>
                     {tab.count !== undefined && (
                       <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
                         {tab.count}
@@ -334,7 +348,14 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto">
               {activeTab === 'marketplace' ? (
                 <ConversationList
-                  conversations={conversations}
+                  conversations={marketplaceConversations}
+                  selectedConversation={selectedConversationId}
+                  onSelectConversation={setSelectedConversationId}
+                  loading={conversationsLoading}
+                />
+              ) : activeTab === 'tutoring' ? (
+                <ConversationList
+                  conversations={tutoringConversations}
                   selectedConversation={selectedConversationId}
                   onSelectConversation={setSelectedConversationId}
                   loading={conversationsLoading}
@@ -352,7 +373,7 @@ export default function ChatPage() {
 
           {/* Right Panel - Chat Window */}
           <div className="col-span-8 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 flex flex-col theme-transition h-full overflow-hidden">
-            {activeTab === 'marketplace' ? (
+            {(activeTab === 'marketplace' || activeTab === 'tutoring') ? (
               selectedConversationId ? (
                 <ChatWindow conversationId={selectedConversationId} />
               ) : (

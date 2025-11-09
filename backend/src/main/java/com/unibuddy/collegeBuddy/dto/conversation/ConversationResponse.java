@@ -13,6 +13,7 @@ public class ConversationResponse {
     private MessageInfo lastMessage;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String type; // MARKETPLACE or TUTORING
 
     @Data
     public static class ListingInfo {

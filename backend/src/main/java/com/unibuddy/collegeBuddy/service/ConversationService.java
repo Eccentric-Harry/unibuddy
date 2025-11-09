@@ -6,10 +6,12 @@ import com.unibuddy.collegeBuddy.dto.message.SendMessageRequest;
 import com.unibuddy.collegeBuddy.entity.Conversation;
 import com.unibuddy.collegeBuddy.entity.Listing;
 import com.unibuddy.collegeBuddy.entity.Message;
+import com.unibuddy.collegeBuddy.entity.TutoringListing;
 import com.unibuddy.collegeBuddy.entity.User;
 import com.unibuddy.collegeBuddy.repository.ConversationRepository;
 import com.unibuddy.collegeBuddy.repository.ListingRepository;
 import com.unibuddy.collegeBuddy.repository.MessageRepository;
+import com.unibuddy.collegeBuddy.repository.TutoringListingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,6 +32,7 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final ListingRepository listingRepository;
+    private final TutoringListingRepository tutoringListingRepository;
     private final FileStorageService fileStorageService;
     private final ProfanityFilterService profanityFilterService;
     private final RateLimitService rateLimitService;
@@ -128,6 +131,7 @@ public class ConversationService {
         conversation.setListing(listing);
         conversation.setBuyer(buyer);
         conversation.setSeller(listing.getSeller());
+        conversation.setType(Conversation.ConversationType.MARKETPLACE);
 
         conversation = conversationRepository.save(conversation);
         log.info("Created conversation {} for listing {} between buyer {} and seller {}", 
@@ -136,11 +140,53 @@ public class ConversationService {
         return mapToResponse(conversation, buyer.getId());
     }
 
+    @Transactional
+    public ConversationResponse getOrCreateTutoringConversation(UUID tutoringId, User student) {
+        // Validate user is verified
+        if (!student.getEmailVerified()) {
+            throw new IllegalStateException("Only verified users can start conversations");
+        }
+
+        TutoringListing tutoringListing = tutoringListingRepository.findById(tutoringId)
+            .orElseThrow(() -> new RuntimeException("Tutoring listing not found"));
+
+        // Check if student is trying to message themselves
+        if (tutoringListing.getTutor().getId().equals(student.getId())) {
+            throw new IllegalArgumentException("Cannot start conversation with yourself");
+        }
+
+        // Try to find existing conversation for this tutoring listing
+        // Note: We'll use the same Conversation entity but need to identify it somehow
+        // For now, we'll create a dummy Listing reference or extend the Conversation entity
+        // Let's create a new conversation each time for tutoring (simpler approach)
+
+        // Create new conversation
+        Conversation conversation = new Conversation();
+        // We need to create a virtual listing or extend the conversation
+        // For simplicity, let's create a minimal listing reference
+        Listing virtualListing = new Listing();
+        virtualListing.setId(tutoringId); // Use tutoring ID as listing ID
+        virtualListing.setTitle(tutoringListing.getTitle());
+        virtualListing.setSeller(tutoringListing.getTutor());
+
+        conversation.setListing(virtualListing);
+        conversation.setBuyer(student);
+        conversation.setSeller(tutoringListing.getTutor());
+        conversation.setType(Conversation.ConversationType.TUTORING);
+
+        conversation = conversationRepository.save(conversation);
+        log.info("Created tutoring conversation {} for tutoring listing {} between student {} and tutor {}",
+            conversation.getId(), tutoringId, student.getId(), tutoringListing.getTutor().getId());
+
+        return mapToResponse(conversation, student.getId());
+    }
+
     private ConversationResponse mapToResponse(Conversation conversation, UUID currentUserId) {
         ConversationResponse response = new ConversationResponse();
         response.setId(conversation.getId());
         response.setCreatedAt(conversation.getCreatedAt());
         response.setUpdatedAt(conversation.getUpdatedAt());
+        response.setType(conversation.getType().name());
 
         // Map listing info
         ConversationResponse.ListingInfo listingInfo = new ConversationResponse.ListingInfo();

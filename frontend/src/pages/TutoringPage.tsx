@@ -6,8 +6,9 @@ import { TutoringCard } from '../components/tutoring/TutoringCard';
 import { TutoringFilters } from '../components/tutoring/TutoringFilters';
 import { useAuthStore } from '../store/authStore';
 import type { TutoringFilters as FiltersType, TutoringListing } from '../types/tutoring';
-import { dummyTutoringListings } from '../data/dummyTutoring';
 import { TutoringModal, type TutoringFormData } from '../components/tutoring/TutoringModal';
+import { tutoringApi } from '../services/tutoringApi';
+import { conversationApi } from '../services/api';
 
 export default function TutoringPage() {
   const navigate = useNavigate();
@@ -22,34 +23,22 @@ export default function TutoringPage() {
     sort: 'createdAt,desc'
   });
 
-  const fetchListings = (currentFilters: FiltersType) => {
+  const fetchListings = async (currentFilters: FiltersType) => {
     setIsLoading(true);
-    // Simulate API call with dummy data
-    setTimeout(() => {
-      let filteredListings = [...dummyTutoringListings];
-
-      // Apply filters
-      if (currentFilters.subject) {
-        filteredListings = filteredListings.filter(listing =>
-          listing.subjects.some(subject => subject.id === currentFilters.subject)
-        );
-      }
-
-      if (currentFilters.minPrice !== undefined) {
-        filteredListings = filteredListings.filter(
-          listing => listing.hourlyRate >= currentFilters.minPrice!
-        );
-      }
-
-      if (currentFilters.maxPrice !== undefined) {
-        filteredListings = filteredListings.filter(
-          listing => listing.hourlyRate <= currentFilters.maxPrice!
-        );
-      }
-
-      setListings(filteredListings);
+    try {
+      const response = await tutoringApi.getListings(currentFilters);
+      setListings(response.content);
+    } catch (error) {
+      console.error('Error fetching tutoring listings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load tutoring listings. Please try again.',
+        variant: 'destructive'
+      });
+      setListings([]);
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const handleFilterChange = (newFilters: FiltersType) => {
@@ -58,7 +47,7 @@ export default function TutoringPage() {
     fetchListings(updatedFilters);
   };
 
-  const handleContactClick = (listing: TutoringListing) => {
+  const handleContactClick = async (listing: TutoringListing) => {
     if (!isAuthenticated) {
       toast({
         title: 'Login Required',
@@ -69,8 +58,48 @@ export default function TutoringPage() {
       return;
     }
 
-    // Handle contacting the tutor (e.g., open chat or contact form)
-    console.log('Contact tutor:', listing.tutor.id);
+    // Check email verification
+    const isEmailVerified = user?.emailVerified !== undefined ? user.emailVerified : false;
+    if (!isEmailVerified) {
+      toast({
+        title: 'Verification Required',
+        description: 'You must verify your college email before contacting tutors.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      // Start or get existing conversation with the tutor
+      const response = await conversationApi.startTutoringConversation(listing.id);
+      const conversationId = response.data.id;
+
+      // Navigate to chat page with tutoring tab and conversation pre-selected
+      navigate(`/chat?tab=tutoring&conversation=${conversationId}`);
+    } catch (error: any) {
+      console.error('Error starting conversation:', error);
+
+      // Handle specific error cases
+      if (error.response?.status === 403 || error.response?.data?.message?.includes('verified')) {
+        toast({
+          title: 'Verification Required',
+          description: 'You must verify your college email before contacting tutors.',
+          variant: 'destructive'
+        });
+      } else if (error.response?.data?.message?.includes('yourself')) {
+        toast({
+          title: 'Invalid Action',
+          description: 'You cannot contact yourself.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to start conversation. Please try again.',
+          variant: 'destructive'
+        });
+      }
+    }
   };
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -100,15 +129,23 @@ export default function TutoringPage() {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateSuccess = (data: TutoringFormData) => {
-    // Here you would normally send this data to your backend
-    console.log('New tutoring listing:', data);
-    toast({
-      title: 'Success',
-      description: 'Your tutoring listing has been created.',
-    });
-    // Refresh listings
-    fetchListings(filters);
+  const handleCreateSuccess = async (data: TutoringFormData) => {
+    try {
+      await tutoringApi.createListing(data);
+      toast({
+        title: 'Success',
+        description: 'Your tutoring listing has been created.',
+      });
+      // Refresh listings
+      fetchListings(filters);
+    } catch (error) {
+      console.error('Error creating tutoring listing:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create tutoring listing. Please try again.',
+        variant: 'destructive'
+      });
+    }
   };
 
   useEffect(() => {

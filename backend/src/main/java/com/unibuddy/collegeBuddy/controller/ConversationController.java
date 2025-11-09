@@ -64,4 +64,13 @@ public class ConversationController {
         ConversationResponse response = conversationService.getOrCreateConversation(listingId, user);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/start-tutoring/{tutoringId}")
+    public ResponseEntity<ConversationResponse> startTutoringConversation(
+            @PathVariable UUID tutoringId,
+            @AuthenticationPrincipal User user) {
+
+        ConversationResponse response = conversationService.getOrCreateTutoringConversation(tutoringId, user);
+        return ResponseEntity.ok(response);
+    }
 }

@@ -64,17 +64,22 @@ public class AuthService {
         // Store user data temporarily (don't save to database yet)
         pendingUserService.storePendingUser(request.getEmail(), request, otp, otpExpiry);
         
-        // Send OTP email
-        emailService.sendOtpEmail(request.getEmail(), request.getName(), otp);
-        
-        log.info("Registration initiated for email: {}. OTP sent.", request.getEmail());
-        
+        // Send OTP email (non-blocking - registration continues even if email fails)
+        boolean emailSent = emailService.sendOtpEmail(request.getEmail(), request.getName(), otp);
+
+        String message = emailSent
+            ? "OTP has been sent to your email address. Please verify to complete registration."
+            : "Registration initiated. Please check your server logs for the OTP code (email service unavailable).";
+
+        log.info("Registration initiated for email: {}. OTP: {} (expires in 5 minutes)",
+                 request.getEmail(), otp);
+
         // Return registration response indicating OTP was sent
         return new RegistrationResponse(
-            "OTP has been sent to your email address. Please verify to complete registration.",
+            message,
             request.getEmail(),
             request.getName(),
-            true,
+            emailSent,
             5
         );
     }
@@ -226,10 +231,11 @@ public class AuthService {
         // Update pending user with new OTP
         pendingUserService.storePendingUser(request.getEmail(), pendingUser.getRegisterRequest(), newOtp, newOtpExpiry);
         
-        // Send new OTP email
-        emailService.sendOtpEmail(request.getEmail(), pendingUser.getRegisterRequest().getName(), newOtp);
-        
-        log.info("New OTP sent for email: {}", request.getEmail());
+        // Send new OTP email (non-blocking)
+        boolean emailSent = emailService.sendOtpEmail(request.getEmail(), pendingUser.getRegisterRequest().getName(), newOtp);
+
+        log.info("New OTP generated for email: {}. OTP: {} (expires in 5 minutes). Email sent: {}",
+                 request.getEmail(), newOtp, emailSent);
     }
 
     public void logout(String refreshToken) {

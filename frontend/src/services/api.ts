@@ -171,6 +171,9 @@ export const conversationApi = {
 
   startConversation: (listingId: string): Promise<AxiosResponse<Conversation>> =>
     api.post(`/conversations/start/${listingId}`),
+
+  startTutoringConversation: (tutoringId: string): Promise<AxiosResponse<Conversation>> =>
+    api.post(`/conversations/start-tutoring/${tutoringId}`),
 };
 
 // Marketplace API calls
