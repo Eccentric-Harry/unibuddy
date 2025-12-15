@@ -34,3 +34,7 @@ build/
 
 ### Uploads ###
 src/main/resources/static/uploads/
+
+### Sensitive Config ###
+src/main/resources/application.properties
+src/test/resources/application-test.properties
