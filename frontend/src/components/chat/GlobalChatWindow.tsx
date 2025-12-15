@@ -151,19 +151,6 @@ export function GlobalChatWindow({ globalChatId, globalChat }: GlobalChatWindowP
     };
   });
 
-  const getChannelIcon = (name?: string) => {
-    if (!name) return <Hash className="w-5 h-5 text-indigo-500" />;
-    
-    const lowercaseName = name.toLowerCase();
-    if (lowercaseName.includes('general')) {
-      return <Hash className="w-5 h-5 text-indigo-500" />;
-    } else if (lowercaseName.includes('study')) {
-      return <Users className="w-5 h-5 text-green-500" />;
-    } else {
-      return <Hash className="w-5 h-5 text-blue-500" />;
-    }
-  };
-
   return (
         <div className="h-full flex flex-col bg-white dark:bg-slate-900">
       {/* Header */}

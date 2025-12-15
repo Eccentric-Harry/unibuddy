@@ -15,7 +15,6 @@ import type {
   ListingCreateRequest,
   ListingResponse,
   ListingFilters,
-  ListingImage,
   ExpressInterestRequest,
   StatusUpdateRequest,
   PaginatedResponse

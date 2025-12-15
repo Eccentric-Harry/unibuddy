@@ -117,11 +117,11 @@ export function RecentConversationsPreview() {
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-semibold text-slate-900 dark:text-slate-100">{otherUser.name}</h3>
                       <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0 ml-2">
-                        {new Date(lastMessage?.timestamp || conversation.createdAt).toLocaleDateString()}
+                        {new Date(lastMessage?.createdAt || conversation.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1">
-                      {lastMessage?.content || 'Start a conversation'}
+                      {lastMessage?.messageText || 'Start a conversation'}
                     </p>
                   </div>
                 </div>
