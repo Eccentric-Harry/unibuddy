@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { Message } from '../../types';
-import { ImageModal } from '../ui/ImageModal';
+import { ImageModal } from '../ui/image-modal';
 import { useAuthStore } from '../../store/authStore';
 
 interface MessageListProps {
@@ -27,7 +27,7 @@ const MessageList: React.FC<MessageListProps> = ({
   return (
     <>
       <div 
-        className={`flex-1 overflow-y-auto p-4 space-y-4 ${className}`}
+        className={`h-full overflow-y-auto p-4 space-y-4 ${className}`}
         onScroll={onScroll}
       >
         {messages.map((message, index) => {

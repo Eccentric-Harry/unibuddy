@@ -30,6 +30,13 @@ public class ListingCreateRequest {
     @NotBlank(message = "Category is required")
     private String category;
 
+    private String condition;
+
+    private Short year;
+
+    @Size(max = 100, message = "Registration number must not exceed 100 characters")
+    private String registrationNo;
+
     @Size(max = 5, message = "Maximum 5 images allowed")
     private List<ListingImageDto> images;
 

@@ -37,6 +37,14 @@ public class Listing {
     @Column(nullable = false, length = 100)
     private String category;
 
+    @Column(length = 50)
+    private String condition;
+
+    private Short year; // Seller's academic year at time of listing
+
+    @Column(name = "registration_no", length = 100)
+    private String registrationNo; // Seller's registration number
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private List<ListingImage> images;

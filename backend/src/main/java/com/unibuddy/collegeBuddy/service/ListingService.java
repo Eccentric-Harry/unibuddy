@@ -8,6 +8,8 @@ import com.unibuddy.collegeBuddy.entity.User;
 import com.unibuddy.collegeBuddy.repository.ConversationRepository;
 import com.unibuddy.collegeBuddy.repository.ListingRepository;
 import com.unibuddy.collegeBuddy.repository.MessageRepository;
+import com.unibuddy.collegeBuddy.repository.UserRepository;
+import org.hibernate.Hibernate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,15 +33,22 @@ public class ListingService {
     private final ListingRepository listingRepository;
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
+    private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final FileStorageService fileStorageService;
     private final ProfanityFilterService profanityFilterService;
 
     @Transactional
     public ListingResponse createListing(ListingCreateRequest request, User seller) {
-        // Validate user is verified
-        if (!seller.getEmailVerified() || seller.getCollege() == null) {
-            throw new IllegalStateException("Only verified college users can create listings");
+        // Validate user is verified and ensure college is loaded
+        if (!seller.getEmailVerified()) {
+            throw new IllegalStateException("Only verified users can create listings");
+        }
+
+        // Force initialize the college entity
+        Hibernate.initialize(seller.getCollege());
+        if (seller.getCollege() == null) {
+            throw new IllegalStateException("Only college users can create listings");
         }
 
         // Check rate limit
@@ -51,16 +60,15 @@ public class ListingService {
             throw new IllegalStateException("You can have a maximum of 10 active listings");
         }
 
-        // Validate content
-        profanityFilterService.validateContent(request.getTitle());
-        profanityFilterService.validateContent(request.getDescription());
-
         // Create listing with pre-uploaded images
         Listing listing = new Listing();
         listing.setTitle(request.getTitle());
         listing.setDescription(request.getDescription());
         listing.setPrice(request.getPrice());
         listing.setCategory(request.getCategory());
+        listing.setCondition(request.getCondition());
+        listing.setYear(request.getYear());
+        listing.setRegistrationNo(request.getRegistrationNo());
         listing.setImages(request.getImages().stream()
                 .map(img -> new Listing.ListingImage(img.getUrl(), img.getPath(), img.getAlt()))
                 .collect(Collectors.toList()));
@@ -214,10 +222,8 @@ public class ListingService {
     }
 
     private User getUserById(UUID userId) {
-        // Placeholder method - replace with actual user service call
-        User user = new User();
-        user.setId(userId);
-        return user;
+        return userRepository.findByIdWithCollege(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
     private ListingResponse mapToResponse(Listing listing) {
@@ -227,6 +233,9 @@ public class ListingService {
         response.setDescription(listing.getDescription());
         response.setPrice(listing.getPrice());
         response.setCategory(listing.getCategory());
+        response.setCondition(listing.getCondition());
+        response.setYear(listing.getYear());
+        response.setRegistrationNo(listing.getRegistrationNo());
         response.setImages(listing.getImages());
         response.setStatus(listing.getStatus().name());
         response.setCreatedAt(listing.getCreatedAt());
@@ -237,7 +246,10 @@ public class ListingService {
         sellerInfo.setId(listing.getSeller().getId());
         sellerInfo.setName(listing.getSeller().getName());
         sellerInfo.setAvatarUrl(listing.getSeller().getAvatarUrl());
-        sellerInfo.setYear(listing.getSeller().getYear());
+        sellerInfo.setEmail(listing.getSeller().getEmail());
+        // Use listing's year/registrationNo if available, otherwise fall back to user's
+        sellerInfo.setYear(listing.getYear() != null ? listing.getYear() : listing.getSeller().getYear());
+        sellerInfo.setRegistrationNo(listing.getRegistrationNo() != null ? listing.getRegistrationNo() : listing.getSeller().getRegistrationNo());
         if (listing.getSeller().getCollege() != null) {
             sellerInfo.setCollegeName(listing.getSeller().getCollege().getName());
         }

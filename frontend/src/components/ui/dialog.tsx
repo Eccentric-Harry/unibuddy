@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 interface DialogProps {
   open: boolean;
@@ -25,7 +25,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="fixed inset-0 bg-black bg-opacity-50"
+        className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
       {children}
@@ -35,7 +35,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
 
 export function DialogContent({ children, className = '' }: DialogContentProps) {
   return (
-    <div className={`relative bg-white rounded-lg shadow-lg p-6 max-w-lg w-full mx-4 ${className}`}>
+    <div className={`relative bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg shadow-lg dark:shadow-2xl p-6 max-w-lg w-full mx-4 theme-transition ${className}`}>
       {children}
     </div>
   );
@@ -51,7 +51,7 @@ export function DialogHeader({ children }: DialogHeaderProps) {
 
 export function DialogTitle({ children }: DialogTitleProps) {
   return (
-    <h2 className="text-lg font-semibold">
+    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
       {children}
     </h2>
   );

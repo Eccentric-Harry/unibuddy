@@ -25,10 +25,10 @@ export function Hero({ userName, onCreateListing }: HeroProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-purple-500 to-fuchsia-500 mb-8"
+      className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-purple-500 to-fuchsia-500 dark:from-violet-800 dark:via-purple-700 dark:to-fuchsia-700 mb-8 shadow-xl dark:shadow-2xl"
     >
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
+      <div className="absolute inset-0 opacity-10 dark:opacity-20">
         <div className="absolute inset-0" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
@@ -58,19 +58,19 @@ export function Hero({ userName, onCreateListing }: HeroProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
             onSubmit={handleSearch}
-            className="flex items-center bg-white rounded-full shadow-lg overflow-hidden max-w-md"
+            className="flex items-center bg-white dark:bg-slate-800 rounded-full shadow-lg overflow-hidden max-w-md"
           >
-            <Search className="ml-4 text-gray-400" size={20} />
+            <Search className="ml-4 text-gray-400 dark:text-gray-500" size={20} />
             <input
               type="text"
               placeholder="Search marketplace..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-4 py-3 text-gray-900 outline-none text-sm md:text-base"
+              className="flex-1 px-4 py-3 text-gray-900 dark:text-gray-100 bg-transparent outline-none text-sm md:text-base placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
             <Button
               type="submit"
-              className="rounded-full m-1 bg-violet-600 hover:bg-violet-700 text-white px-6"
+              className="rounded-full m-1 bg-violet-600 hover:bg-violet-700 dark:bg-violet-700 dark:hover:bg-violet-800 text-white px-6"
             >
               Search
             </Button>
@@ -84,7 +84,7 @@ export function Hero({ userName, onCreateListing }: HeroProps) {
           >
             <Button
               onClick={onCreateListing}
-              className="bg-fuchsia-400 hover:bg-fuchsia-500 text-white font-semibold px-8 py-6 rounded-full text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+              className="bg-fuchsia-400 hover:bg-fuchsia-500 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600 text-white font-semibold px-8 py-6 rounded-full text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
             >
               <Plus className="mr-2" size={24} />
               Post a Listing
@@ -102,7 +102,7 @@ export function Hero({ userName, onCreateListing }: HeroProps) {
           <img
             src="https://www.collegedata.com/hs-fs/collegedata/images/article/what_will_college_life_be_like.jpg?w=800&h=600&fit=crop"
             alt="Campus life"
-            className="rounded-2xl shadow-2xl object-cover w-full h-[400px]"
+            className="rounded-2xl shadow-2xl object-cover w-full h-[400px] dark:opacity-90"
             loading="eager"
             onError={(e) => {
               e.currentTarget.src = "https://placehold.co/800x600/6366f1/ffffff?text=Campus+Life";

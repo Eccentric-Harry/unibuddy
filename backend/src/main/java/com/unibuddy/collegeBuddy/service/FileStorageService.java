@@ -1,7 +1,6 @@
 package com.unibuddy.collegeBuddy.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,41 +18,88 @@ import java.util.UUID;
 @Slf4j
 public class FileStorageService {
 
-    @Autowired
-    private S3SupabaseStorageService s3SupabaseStorageService;
-
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
-    @Value("${app.base-url}")
+    @Value("${app.base-url:http://localhost:8080}")
     private String baseUrl;
-
-    @Value("${spring.profiles.active:local}")
-    private String activeProfile;
 
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png", "image/jpg", "image/webp");
 
     /**
-     * Store files for marketplace listings using the old Supabase service
+     * Store files for marketplace listings using local storage
      */
     public List<String> storeFiles(List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
             return new ArrayList<>();
         }
 
-        // Use S3 Supabase storage for marketplace files
-        return s3SupabaseStorageService.storeMarketplaceImages(files);
+        log.info("Using local storage for marketplace images");
+        return storeFilesLocally(files);
     }
 
     /**
-     * Store a single chat image using S3 Supabase storage
+     * Store a single chat image using local storage
      */
     public String storeChatImage(MultipartFile file) {
-        return s3SupabaseStorageService.storeChatImage(file);
+        return storeFileLocally(file);
     }
 
-    // Keep local storage method for backward compatibility and testing
+    /**
+     * Store multiple files locally and return their URLs
+     */
+    private List<String> storeFilesLocally(List<MultipartFile> files) {
+        List<String> urls = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            try {
+                String url = storeFileLocallyForMarketplace(file);
+                urls.add(url);
+            } catch (Exception e) {
+                log.error("Failed to store file locally: {}", file.getOriginalFilename(), e);
+                // Continue with other files
+            }
+        }
+
+        return urls;
+    }
+
+    /**
+     * Store a single file locally for marketplace and return relative URL
+     */
+    private String storeFileLocallyForMarketplace(MultipartFile file) {
+        validateFile(file);
+
+        try {
+            // Create upload directory if it doesn't exist - use same logic as LocalStorageController
+            Path projectRoot = Paths.get("").toAbsolutePath();
+            Path uploadPath = projectRoot.resolve("backend").resolve(uploadDir);
+            Files.createDirectories(uploadPath);
+
+            // Generate unique filename
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : "";
+            String filename = UUID.randomUUID().toString() + extension;
+
+            // Store file
+            Path targetLocation = uploadPath.resolve(filename);
+            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
+            // Return relative URL that will be served by static resource mapping
+            return "/uploads/" + filename;
+
+        } catch (IOException ex) {
+            log.error("Failed to store file locally", ex);
+            throw new RuntimeException("Failed to store file locally", ex);
+        }
+    }
+
+    /**
+     * Store a single file locally and return URL for backward compatibility
+     */
     public String storeFileLocally(MultipartFile file) {
         validateFile(file);
         

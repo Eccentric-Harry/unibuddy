@@ -10,6 +10,7 @@ import MarketplacePage from './pages/MarketplacePage';
 import ListingDetailPage from './pages/ListingDetailPage';
 import ChatPage from './pages/ChatPage';
 import JobsPage from './pages/JobsPage';
+import TutoringPage from './pages/TutoringPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -22,7 +23,6 @@ function App() {
       <Router>
         <div className="App">
           <Routes>
-            {/* Public routes */}
             <Route 
               path="/login" 
               element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginForm />} 
@@ -36,7 +36,6 @@ function App() {
               element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <OtpVerificationForm />} 
             />
             
-            {/* Protected routes */}
             <Route
               path="/dashboard"
               element={
@@ -77,14 +76,20 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/tutoring"
+              element={
+                <ProtectedRoute>
+                  <TutoringPage />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Default redirect */}
             <Route 
               path="/" 
               element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
             />
             
-            {/* Catch all */}
             <Route 
               path="*" 
               element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 

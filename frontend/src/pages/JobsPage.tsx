@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/ui/use-toast';
 import { JobGrid } from '../components/jobs/JobGrid';
 import { JobFilters } from '../components/jobs/JobFilters';
 import type { JobFilters as JobFiltersType, JobPosting } from '../types/jobs';
-import { dummyJobs } from '../data/dummyJobs';
+import { jobApi } from '../services/jobApi';
 
 export default function JobsPage() {
   const { toast } = useToast();
@@ -17,45 +17,41 @@ export default function JobsPage() {
     page: 0,
     size: 12,
   });
+  const [stats, setStats] = useState({
+    total: 0,
+    internships: 0,
+    fullTime: 0,
+    partTime: 0,
+    remote: 0,
+  });
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const fetchJobs = (currentFilters: JobFiltersType) => {
+  const fetchJobs = async (currentFilters: JobFiltersType) => {
     setIsLoading(true);
-
-    // Simulate API call with dummy data
-    setTimeout(() => {
-      let filteredJobs = [...dummyJobs];
-
-      // Apply filters
-      if (currentFilters.query) {
-        const query = currentFilters.query.toLowerCase();
-        filteredJobs = filteredJobs.filter(job =>
-          job.title.toLowerCase().includes(query) ||
-          job.company.name.toLowerCase().includes(query) ||
-          job.description.toLowerCase().includes(query) ||
-          job.skills.some(skill => skill.toLowerCase().includes(query))
-        );
-      }
-
-      if (currentFilters.jobType) {
-        filteredJobs = filteredJobs.filter(job => job.jobType === currentFilters.jobType);
-      }
-
-      if (currentFilters.locationType) {
-        filteredJobs = filteredJobs.filter(job => job.locationType === currentFilters.locationType);
-      }
-
-      // Pagination
-      const pageSize = currentFilters.size || 12;
-      const page = currentFilters.page || 0;
-      const startIdx = page * pageSize;
-      const endIdx = startIdx + pageSize;
-      const paginatedJobs = filteredJobs.slice(startIdx, endIdx);
-
-      setJobs(paginatedJobs);
-      setTotalPages(Math.ceil(filteredJobs.length / pageSize));
-      setCurrentPage(page);
+    try {
+      const response = await jobApi.getJobs(currentFilters);
+      setJobs(response.content);
+      setTotalPages(response.totalPages);
+      setCurrentPage(response.number);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load job postings. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
       setIsLoading(false);
-    }, 300);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const statsData = await jobApi.getJobStats();
+      setStats(statsData);
+    } catch (error) {
+      console.error('Error fetching job stats:', error);
+    }
   };
 
   const handleFilterChange = (newFilters: JobFiltersType) => {
@@ -76,7 +72,7 @@ export default function JobsPage() {
   };
 
   const handleApply = (jobId: string) => {
-    const job = dummyJobs.find(j => j.id === jobId);
+    const job = jobs.find(j => j.id === jobId);
     if (job && job.applicationUrl) {
       window.open(job.applicationUrl, '_blank');
       toast({
@@ -86,53 +82,93 @@ export default function JobsPage() {
     } else {
       toast({
         title: 'Application Info',
-        description: 'This is a demo job posting. In production, this would redirect to the application page.',
+        description: 'Application URL not available for this job.',
       });
+    }
+  };
+
+  const handleSyncJobs = async () => {
+    setIsSyncing(true);
+    try {
+      await jobApi.syncJobs();
+      toast({
+        title: 'Job Sync Started',
+        description: 'Jobs are being synced from external sources. This may take a few moments.',
+      });
+      // Refresh jobs after a short delay
+      setTimeout(() => {
+        fetchJobs(filters);
+        fetchStats();
+      }, 3000);
+    } catch (error) {
+      console.error('Error syncing jobs:', error);
+      toast({
+        title: 'Sync Failed',
+        description: 'Failed to sync jobs. Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
   useEffect(() => {
     fetchJobs(filters);
+    fetchStats();
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Briefcase className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">Job Board</h1>
+            <Briefcase className="w-8 h-8 text-primary dark:text-indigo-400" />
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Job Board</h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-slate-600 dark:text-slate-400">
             Discover internships, part-time, and full-time opportunities in Computer Science
           </p>
         </div>
+        <button
+          onClick={handleSyncJobs}
+          disabled={isSyncing}
+          className="mt-4 md:mt-0 flex items-center gap-2 px-4 py-2 bg-primary dark:bg-indigo-600 text-white rounded-lg hover:bg-primary/90 dark:hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? 'Syncing...' : 'Sync Jobs'}
+        </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-primary">{dummyJobs.length}</div>
-          <div className="text-sm text-gray-600">Total Jobs</div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none p-4 theme-transition">
+          <div className="text-2xl font-bold text-primary dark:text-indigo-400">{stats.total}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Total Jobs</div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-green-600">
-            {dummyJobs.filter(j => j.jobType === 'Internship').length}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none p-4 theme-transition">
+          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+            {stats.internships}
           </div>
-          <div className="text-sm text-gray-600">Internships</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Internships</div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-blue-600">
-            {dummyJobs.filter(j => j.locationType === 'Remote').length}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none p-4 theme-transition">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            {stats.fullTime}
           </div>
-          <div className="text-sm text-gray-600">Remote Jobs</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Full-time</div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="text-2xl font-bold text-purple-600">
-            {dummyJobs.filter(j => j.jobType === 'Part-time').length}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none p-4 theme-transition">
+          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            {stats.partTime}
           </div>
-          <div className="text-sm text-gray-600">Part-time</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Part-time</div>
+        </div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none p-4 theme-transition">
+          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+            {stats.remote}
+          </div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Remote</div>
         </div>
       </div>
 

@@ -15,6 +15,9 @@ public class ListingResponse {
     private String description;
     private BigDecimal price;
     private String category;
+    private String condition;
+    private Short year;
+    private String registrationNo;
     private List<ListingImage> images;
     private String status;
     private SellerInfo seller;
@@ -27,8 +30,11 @@ public class ListingResponse {
         private UUID id;
         private String name;
         private String avatarUrl;
+        private String email;
         private Short year;
         private String collegeName;
+        private String registrationNo;
+        private String hostel;
     }
 
     @Data

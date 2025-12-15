@@ -30,6 +30,8 @@ export interface RegisterRequest {
   email: string;
   password: string;
   collegeCode?: string;
+  year?: number;
+  registrationNo?: string;
 }
 
 export interface LoginRequest {
@@ -83,6 +85,7 @@ export interface Conversation {
   };
   createdAt: string;
   updatedAt: string;
+  type: 'MARKETPLACE' | 'TUTORING';
 }
 
 export interface Message {
@@ -139,7 +142,7 @@ export interface SendGlobalMessageRequest {
 }
 
 export interface ChatTab {
-  id: 'marketplace' | 'global';
+  id: 'marketplace' | 'global' | 'tutoring';
   name: string;
   count?: number;
 }

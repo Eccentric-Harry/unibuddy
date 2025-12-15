@@ -27,4 +27,7 @@ public class RegisterRequest {
     private String password;
     
     private Short year; // Academic year (optional)
+
+    @Size(max = 100, message = "Registration number must not exceed 100 characters")
+    private String registrationNo; // Student registration number (optional)
 }

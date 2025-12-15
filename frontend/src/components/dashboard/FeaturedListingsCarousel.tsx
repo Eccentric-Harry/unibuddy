@@ -44,14 +44,14 @@ export function FeaturedListingsCarousel() {
         transition={{ delay: 0.3, duration: 0.6 }}
         className="mb-8"
       >
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">Featured Listings</h2>
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-6">Featured Listings</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
-              <div className="h-48 bg-gray-200" />
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none overflow-hidden animate-pulse">
+              <div className="h-48 bg-slate-200 dark:bg-slate-700" />
               <div className="p-4 space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/2" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
               </div>
             </div>
           ))}
@@ -68,10 +68,10 @@ export function FeaturedListingsCarousel() {
         transition={{ delay: 0.3, duration: 0.6 }}
         className="mb-8"
       >
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">Featured Listings</h2>
-        <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
-          <p className="text-gray-600 mb-4">No listings yet. Be the first to post!</p>
-          <Button onClick={() => navigate('/marketplace')} className="bg-indigo-600 hover:bg-indigo-700">
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-6">Featured Listings</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center shadow-sm dark:shadow-none theme-transition">
+          <p className="text-slate-600 dark:text-slate-400 mb-4">No listings yet. Be the first to post!</p>
+          <Button onClick={() => navigate('/marketplace')} className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800">
             Go to Marketplace
           </Button>
         </div>
@@ -87,11 +87,11 @@ export function FeaturedListingsCarousel() {
       className="mb-8"
     >
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl font-bold text-gray-900">Featured Listings</h2>
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Featured Listings</h2>
         <Button
           variant="ghost"
           onClick={() => navigate('/marketplace')}
-          className="text-indigo-600 hover:text-indigo-700"
+          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
         >
           View all →
         </Button>
@@ -123,15 +123,15 @@ export function FeaturedListingsCarousel() {
           <>
             <button
               onClick={prevSlide}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 rounded-full p-2 shadow-lg hover:bg-slate-50 dark:hover:bg-slate-700 theme-transition"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={20} className="text-slate-900 dark:text-slate-100" />
             </button>
             <button
               onClick={nextSlide}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 rounded-full p-2 shadow-lg hover:bg-slate-50 dark:hover:bg-slate-700 theme-transition"
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={20} className="text-slate-900 dark:text-slate-100" />
             </button>
           </>
         )}
@@ -143,7 +143,7 @@ export function FeaturedListingsCarousel() {
               key={index}
               onClick={() => setCurrentIndex(index)}
               className={`h-2 rounded-full transition-all ${
-                index === currentIndex ? 'w-8 bg-indigo-600' : 'w-2 bg-gray-300'
+                index === currentIndex ? 'w-8 bg-indigo-600 dark:bg-indigo-500' : 'w-2 bg-slate-300 dark:bg-slate-600'
               }`}
             />
           ))}
@@ -156,7 +156,6 @@ export function FeaturedListingsCarousel() {
 function ListingCard({ listing, index }: { listing: ListingResponse; index: number }) {
   const navigate = useNavigate();
 
-  // Use actual uploaded image or fallback to a working placeholder
   const imageUrl = listing.images?.[0]?.url ||
     `https://images.unsplash.com/photo-1589998059171-988d887df646?w=400&h=300&fit=crop`;
 
@@ -167,34 +166,34 @@ function ListingCard({ listing, index }: { listing: ListingResponse; index: numb
       transition={{ delay: 0.1 * index, duration: 0.4 }}
       whileHover={{ y: -8, scale: 1.02 }}
       onClick={() => navigate(`/marketplace/${listing.id}`)}
-      className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer group"
+      className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none hover:shadow-xl dark:hover:shadow-xl/20 transition-all duration-300 overflow-hidden cursor-pointer group theme-transition"
     >
-      <div className="relative h-48 overflow-hidden bg-gray-100">
+      <div className="relative h-48 overflow-hidden bg-slate-100 dark:bg-slate-700">
         <img
           src={imageUrl}
           alt={listing.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 dark:opacity-90"
           loading="lazy"
           onError={(e) => {
             e.currentTarget.src = `https://placehold.co/400x300/8b5cf6/ffffff?text=${encodeURIComponent(listing.category)}`;
           }}
         />
         <div className="absolute top-3 left-3">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/90 backdrop-blur-sm text-violet-700">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm text-violet-700 dark:text-violet-400">
             <Tag size={12} className="mr-1" />
             {listing.category}
           </span>
         </div>
         <div className="absolute top-3 right-3">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 dark:bg-emerald-600 text-white">
             ${listing.price}
           </span>
         </div>
       </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-1">{listing.title}</h3>
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{listing.description}</p>
+        <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100 mb-2 line-clamp-1">{listing.title}</h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">{listing.description}</p>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

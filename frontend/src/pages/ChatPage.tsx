@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { MessageSquare, Users, ChevronDown, ArrowLeft } from 'lucide-react';
 import { ConversationList } from '../components/chat/ConversationList';
 import { GlobalChatList } from '../components/chat/GlobalChatList';
@@ -8,12 +9,12 @@ import { GlobalChatWindow } from '../components/chat/GlobalChatWindow';
 import { useAuthStore } from '../store/authStore';
 import { websocketService } from '../services/websocket';
 import { conversationApi, globalChatApi } from '../services/api';
-import { Button } from '../components/ui/button';
 import type { ChatTab } from '../types';
 
 export default function ChatPage() {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'marketplace' | 'global'>('global');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'marketplace' | 'global' | 'tutoring'>('global');
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [selectedGlobalChatId, setSelectedGlobalChatId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -93,25 +94,53 @@ export default function ChatPage() {
     }
   }, [activeTab, globalChatsData, selectedGlobalChatId]);
 
+  // Handle URL parameters for auto-selection
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const conversationId = searchParams.get('conversation');
+
+    if (tab === 'marketplace') {
+      setActiveTab('marketplace');
+    } else if (tab === 'tutoring') {
+      setActiveTab('tutoring');
+    }
+
+    if (conversationId) {
+      setSelectedConversationId(conversationId);
+      setSelectedGlobalChatId(null);
+      if (isMobile) {
+        setShowChatView(true);
+      }
+      // Clear URL params after setting state
+      searchParams.delete('tab');
+      searchParams.delete('conversation');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, isMobile]);
+
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
       </div>
     );
   }
 
+  const conversations = conversationsData?.data?.content || [];
+  const marketplaceConversations = conversations.filter(c => c.type === 'MARKETPLACE');
+  const tutoringConversations = conversations.filter(c => c.type === 'TUTORING');
+  const globalChats = globalChatsData?.data || [];
+
   const tabs: ChatTab[] = [
     { id: 'global', name: 'College Chat', count: globalChatsData?.data?.length },
-    { id: 'marketplace', name: 'Marketplace', count: conversationsData?.data?.content?.length },
+    { id: 'marketplace', name: 'Marketplace', count: marketplaceConversations.length },
+    { id: 'tutoring', name: 'Tutoring', count: tutoringConversations.length },
   ];
 
-  const conversations = conversationsData?.data?.content || [];
-  const globalChats = globalChatsData?.data || [];
   const selectedGlobalChat = globalChats.find(chat => chat.id === selectedGlobalChatId);
 
-  const handleChatSelection = (type: 'marketplace' | 'global', id: string) => {
-    if (type === 'marketplace') {
+  const handleChatSelection = (type: 'marketplace' | 'global' | 'tutoring', id: string) => {
+    if (type === 'marketplace' || type === 'tutoring') {
       setSelectedConversationId(id);
       setSelectedGlobalChatId(null);
     } else {
@@ -134,7 +163,7 @@ export default function ChatPage() {
     if (activeTab === 'global' && selectedGlobalChat) {
       return `#${selectedGlobalChat.name}`;
     }
-    if (activeTab === 'marketplace' && selectedConversationId) {
+    if ((activeTab === 'marketplace' || activeTab === 'tutoring') && selectedConversationId) {
       const conv = conversations.find(c => c.id === selectedConversationId);
       return conv?.otherUser.name || 'Conversation';
     }
@@ -144,37 +173,37 @@ export default function ChatPage() {
   // Mobile view
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         {!showChatView ? (
           // Chat List View
-          <div className="flex flex-col h-screen bg-white">
+          <div className="flex flex-col h-screen bg-white dark:bg-slate-900">
             {/* Mobile Header with Dropdown */}
-            <div className="border-b border-gray-200 bg-white p-4">
+            <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center justify-between w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 theme-transition"
                 >
                   <div className="flex items-center space-x-3">
                     {activeTab === 'global' ? (
-                      <Users className="w-5 h-5 text-indigo-600" />
+                      <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                     ) : (
-                      <MessageSquare className="w-5 h-5 text-indigo-600" />
+                      <MessageSquare className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                     )}
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-slate-900 dark:text-slate-100">
                       {tabs.find(t => t.id === activeTab)?.name}
                     </span>
                     {tabs.find(t => t.id === activeTab)?.count !== undefined && (
-                      <span className="bg-gray-200 text-gray-600 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                      <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
                         {tabs.find(t => t.id === activeTab)?.count}
                       </span>
                     )}
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10">
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
@@ -184,8 +213,8 @@ export default function ChatPage() {
                           setSelectedConversationId(null);
                           setSelectedGlobalChatId(null);
                         }}
-                        className={`flex items-center justify-between w-full p-3 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                          activeTab === tab.id ? 'bg-indigo-50 text-indigo-600' : 'text-gray-900'
+                        className={`flex items-center justify-between w-full p-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700 first:rounded-t-lg last:rounded-b-lg theme-transition ${
+                          activeTab === tab.id ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-slate-100'
                         }`}
                       >
                         <div className="flex items-center space-x-3">
@@ -197,7 +226,7 @@ export default function ChatPage() {
                           <span className="font-medium">{tab.name}</span>
                         </div>
                         {tab.count !== undefined && (
-                          <span className="bg-gray-200 text-gray-600 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                          <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
                             {tab.count}
                           </span>
                         )}
@@ -212,9 +241,16 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto">
               {activeTab === 'marketplace' ? (
                 <ConversationList
-                  conversations={conversations}
+                  conversations={marketplaceConversations}
                   selectedConversation={selectedConversationId}
                   onSelectConversation={(id) => handleChatSelection('marketplace', id)}
+                  loading={conversationsLoading}
+                />
+              ) : activeTab === 'tutoring' ? (
+                <ConversationList
+                  conversations={tutoringConversations}
+                  selectedConversation={selectedConversationId}
+                  onSelectConversation={(id) => handleChatSelection('tutoring', id)}
                   loading={conversationsLoading}
                 />
               ) : (
@@ -228,26 +264,23 @@ export default function ChatPage() {
             </div>
           </div>
         ) : (
-          // Chat View
-          <div className="flex flex-col h-screen bg-white">
-            {/* Mobile Chat Header */}
-            <div className="flex items-center p-4 border-b border-gray-200 bg-white">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBackToList}
-                className="mr-3"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-              <h2 className="text-lg font-semibold text-gray-900 truncate">
-                {getCurrentChatName()}
-              </h2>
+          // Chat Window View
+          <div className="flex flex-col h-screen bg-white dark:bg-slate-900">
+            <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleBackToList}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5 text-slate-900 dark:text-slate-100" />
+                </button>
+                <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{getCurrentChatName()}</h1>
+              </div>
             </div>
 
             {/* Chat Content */}
             <div className="flex-1">
-              {activeTab === 'marketplace' && selectedConversationId ? (
+              {(activeTab === 'marketplace' || activeTab === 'tutoring') && selectedConversationId ? (
                 <ChatWindow conversationId={selectedConversationId} />
               ) : activeTab === 'global' && selectedGlobalChatId ? (
                 <GlobalChatWindow 
@@ -262,125 +295,113 @@ export default function ChatPage() {
     );
   }
 
-  // Desktop view with dropdown
+  // Desktop view
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
-          {/* Desktop Header with Dropdown */}
-          <div className="border-b border-gray-200 bg-white p-4">
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  {activeTab === 'global' ? (
-                    <Users className="w-5 h-5 text-indigo-600" />
-                  ) : (
-                    <MessageSquare className="w-5 h-5 text-indigo-600" />
-                  )}
-                  <span className="font-medium text-gray-900">
-                    {tabs.find(t => t.id === activeTab)?.name}
-                  </span>
-                  {tabs.find(t => t.id === activeTab)?.count !== undefined && (
-                    <span className="bg-gray-200 text-gray-600 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                      {tabs.find(t => t.id === activeTab)?.count}
-                    </span>
-                  )}
-                </div>
-                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
-              </button>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Messages</h1>
+        </div>
 
-              {showDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setShowDropdown(false);
-                        if (tab.id === 'marketplace') {
-                          setSelectedGlobalChatId(null);
-                        } else {
-                          setSelectedConversationId(null);
-                        }
-                      }}
-                      className={`flex items-center justify-between w-full p-3 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                        activeTab === tab.id ? 'bg-indigo-50 text-indigo-600' : 'text-gray-900'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        {tab.id === 'global' ? (
-                          <Users className="w-5 h-5" />
-                        ) : (
-                          <MessageSquare className="w-5 h-5" />
-                        )}
-                        <span className="font-medium">{tab.name}</span>
-                      </div>
-                      {tab.count !== undefined && (
-                        <span className="bg-gray-200 text-gray-600 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                          {tab.count}
-                        </span>
+        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-12rem)]">
+          {/* Left Sidebar - Tabs & List */}
+          <div className="col-span-4 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 flex flex-col theme-transition h-full">
+            {/* Tabs */}
+            <div className="flex border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setSelectedConversationId(null);
+                    setSelectedGlobalChatId(null);
+                  }}
+                  className={`flex-1 px-2 py-3 text-xs sm:text-sm font-medium transition-colors relative ${
+                    activeTab === tab.id
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      {tab.id === 'global' ? (
+                        <Users className="w-4 h-4 flex-shrink-0" />
+                      ) : (
+                        <MessageSquare className="w-4 h-4 flex-shrink-0" />
                       )}
-                    </button>
-                  ))}
-                </div>
+                      <span className="truncate">{tab.name}</span>
+                    </div>
+                    {tab.count !== undefined && (
+                      <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                        {tab.count}
+                      </span>
+                    )}
+                  </div>
+                  {activeTab === tab.id && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Chat Lists */}
+            <div className="flex-1 overflow-y-auto">
+              {activeTab === 'marketplace' ? (
+                <ConversationList
+                  conversations={marketplaceConversations}
+                  selectedConversation={selectedConversationId}
+                  onSelectConversation={setSelectedConversationId}
+                  loading={conversationsLoading}
+                />
+              ) : activeTab === 'tutoring' ? (
+                <ConversationList
+                  conversations={tutoringConversations}
+                  selectedConversation={selectedConversationId}
+                  onSelectConversation={setSelectedConversationId}
+                  loading={conversationsLoading}
+                />
+              ) : (
+                <GlobalChatList
+                  globalChats={globalChats}
+                  selectedGlobalChat={selectedGlobalChatId}
+                  onSelectGlobalChat={setSelectedGlobalChatId}
+                  loading={globalChatsLoading}
+                />
               )}
             </div>
           </div>
 
-          {/* Chat Lists */}
-          <div className="flex-1 overflow-y-auto">
-            {activeTab === 'marketplace' ? (
-              <ConversationList
-                conversations={conversations}
-                selectedConversation={selectedConversationId}
-                onSelectConversation={setSelectedConversationId}
-                loading={conversationsLoading}
-              />
+          {/* Right Panel - Chat Window */}
+          <div className="col-span-8 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 flex flex-col theme-transition h-full overflow-hidden">
+            {(activeTab === 'marketplace' || activeTab === 'tutoring') ? (
+              selectedConversationId ? (
+                <ChatWindow conversationId={selectedConversationId} />
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium">No conversation selected</h3>
+                    <p className="mt-2">Choose a conversation from the sidebar to start chatting</p>
+                  </div>
+                </div>
+              )
             ) : (
-              <GlobalChatList
-                globalChats={globalChats}
-                selectedGlobalChat={selectedGlobalChatId}
-                onSelectGlobalChat={setSelectedGlobalChatId}
-                loading={globalChatsLoading}
-              />
+              selectedGlobalChatId ? (
+                <GlobalChatWindow
+                  globalChatId={selectedGlobalChatId}
+                  globalChat={selectedGlobalChat}
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium">Welcome to College Chat</h3>
+                    <p className="mt-2">Select a channel from the sidebar to start chatting with your college mates</p>
+                  </div>
+                </div>
+              )
             )}
           </div>
-        </div>
-
-        {/* Chat Window */}
-        <div className="flex-1">
-          {activeTab === 'marketplace' ? (
-            selectedConversationId ? (
-              <ChatWindow conversationId={selectedConversationId} />
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                  <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium">No conversation selected</h3>
-                  <p className="mt-2">Choose a conversation from the sidebar to start chatting</p>
-                </div>
-              </div>
-            )
-          ) : (
-            selectedGlobalChatId ? (
-              <GlobalChatWindow 
-                globalChatId={selectedGlobalChatId} 
-                globalChat={selectedGlobalChat}
-              />
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                  <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium">Welcome to College Chat</h3>
-                  <p className="mt-2">Select a channel from the sidebar to start chatting with your college mates</p>
-                </div>
-              </div>
-            )
-          )}
         </div>
       </div>
     </div>

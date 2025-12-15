@@ -32,7 +32,7 @@ export function StatsBar() {
     },
     {
       label: 'Active Users',
-      value: '2.4k',
+      value: '4',
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
@@ -40,7 +40,7 @@ export function StatsBar() {
     },
     {
       label: 'Tutors Available',
-      value: '94',
+      value: '3',
       icon: GraduationCap,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
@@ -97,22 +97,22 @@ export function StatsBar() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 * index, duration: 0.4 }}
               whileHover={{ scale: 1.05, y: -4 }}
-              className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300"
+              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none hover:shadow-lg dark:hover:shadow-xl/20 transition-all duration-300 theme-transition"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                  <Icon className={`${stat.color}`} size={24} />
+                <div className={`p-3 rounded-xl ${stat.bgColor} dark:bg-opacity-20`}>
+                  <Icon className={`${stat.color} dark:opacity-90`} size={24} />
                 </div>
               </div>
               <div>
                 {stat.loading ? (
-                  <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-1" />
+                  <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-1" />
                 ) : (
-                  <h3 className="text-3xl font-bold text-gray-900 mb-1">
+                  <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-1">
                     {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
                   </h3>
                 )}
-                <p className="text-sm text-gray-600">{stat.label}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{stat.label}</p>
               </div>
             </motion.div>
           );

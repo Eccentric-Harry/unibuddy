@@ -22,6 +22,8 @@ const registerSchema = z.object({
     .min(8, 'Password must be at least 8 characters')
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   confirmPassword: z.string(),
+  year: z.string().optional(),
+  registrationNo: z.string().optional(),
   collegeCode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -47,9 +49,13 @@ export function RegisterForm() {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       clearError();
-      const { confirmPassword, ...registerData } = data;
-      const response = await registerUser(registerData as RegisterRequest);
-      
+      const { confirmPassword, year, ...registerData } = data;
+      const request: RegisterRequest = {
+        ...registerData,
+        year: year ? parseInt(year) : undefined,
+      };
+      const response = await registerUser(request);
+
       // Navigate to OTP verification page with user data
       navigate('/verify-otp', {
         state: {
@@ -120,7 +126,37 @@ export function RegisterForm() {
                 Use your official college email address for verification
               </p>
             </div>
-            
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="year">Year (Optional)</Label>
+                <Input
+                  id="year"
+                  type="number"
+                  placeholder="e.g., 2"
+                  min="1"
+                  max="6"
+                  {...register('year')}
+                />
+                {errors.year && (
+                  <p className="text-sm text-red-600">{errors.year.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="registrationNo">Reg. No (Optional)</Label>
+                <Input
+                  id="registrationNo"
+                  type="text"
+                  placeholder="e.g., 21BCE1234"
+                  {...register('registrationNo')}
+                />
+                {errors.registrationNo && (
+                  <p className="text-sm text-red-600">{errors.registrationNo.message}</p>
+                )}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
