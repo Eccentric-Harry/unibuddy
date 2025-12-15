@@ -23,7 +23,6 @@ function App() {
       <Router>
         <div className="App">
           <Routes>
-            {/* Public routes */}
             <Route 
               path="/login" 
               element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginForm />} 
@@ -37,7 +36,6 @@ function App() {
               element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <OtpVerificationForm />} 
             />
             
-            {/* Protected routes */}
             <Route
               path="/dashboard"
               element={
@@ -87,14 +85,11 @@ function App() {
               }
             />
 
-            {/* Default redirect */}
-            {/* Default redirect */}
             <Route 
               path="/" 
               element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
             />
             
-            {/* Catch all */}
             <Route 
               path="*" 
               element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 

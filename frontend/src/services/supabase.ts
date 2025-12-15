@@ -28,7 +28,7 @@ export const STORAGE_BUCKET = 'listing-images';
 export const testSupabaseConnection = async (): Promise<{success: boolean, message?: string, error?: string}> => {
   try {
     // Test by listing the storage bucket (safe operation that doesn't require a table)
-    const { data, error } = await supabase.storage.from(STORAGE_BUCKET).list('', { limit: 1 });
+    const { error } = await supabase.storage.from(STORAGE_BUCKET).list('', { limit: 1 });
 
     if (error) {
       // If bucket doesn't exist, provide helpful error

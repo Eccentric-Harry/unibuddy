@@ -40,7 +40,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
+                                                       .requestMatchers(
                                 "/api/auth/**",
                                 "/api/health/**",
                                 "/api/debug/**",  // Allow public access to debug endpoints (remove in production)
@@ -48,7 +48,7 @@ public class SecurityConfig {
                                 "/uploads/**",  // Allow public access to uploaded images
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                 "/swagger-ui.html"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
